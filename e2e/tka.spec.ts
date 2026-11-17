@@ -40,3 +40,54 @@ test("manajemen melihat ringkasan jaringan dan bisa menelusuri heatmap", async (
   await expect(page.getByRole("table")).toBeVisible();
   await page.screenshot({ path: "test-results/tka-kompetensi.png", fullPage: true });
 });
+
+test("admin sekolah diarahkan ke sekolahnya; profil siswa, kelompok intervensi, perbandingan TO", async ({ browser }) => {
+  const page = await login(browser, "admin.sdtjbdg");
+  await page.goto("/tka");
+  await expect(page).toHaveURL(/\/tka\/sekolah\/SDTJBDG/);
+  await expect(page.getByRole("heading", { name: "SD Talenta Juara Bandung" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Daftar siswa" })).toBeVisible();
+  // School switcher is not offered to a school admin.
+  await expect(page.getByLabel("Sekolah", { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: "test-results/tka-sekolah.png", fullPage: true });
+
+  // Student table: filter, then open a profile.
+  await page.getByLabel("Status").selectOption("berisiko");
+  await page.locator('table a[href^="/tka/siswa/"]').first().click();
+  await expect(page.getByRole("heading", { name: "Rekomendasi fokus intervensi" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Catatan intervensi" })).toBeVisible();
+  await page.screenshot({ path: "test-results/tka-siswa.png", fullPage: true });
+
+  // Another school's dashboard is not reachable.
+  await page.goto("/tka/sekolah/SMPTJPKU");
+  await expect(page).toHaveURL(/\/tka\/sekolah\/SDTJBDG/);
+
+  await page.goto("/tka/intervensi");
+  await expect(page.getByRole("heading", { name: "Kelompok Intervensi" })).toBeVisible();
+  await page.screenshot({ path: "test-results/tka-intervensi.png", fullPage: true });
+  for (const fmt of ["Excel", "PDF"]) {
+    const dl = page.waitForEvent("download");
+    await page.getByRole("link", { name: fmt }).click();
+    expect((await dl).suggestedFilename()).toMatch(new RegExp(`^Kelompok_Intervensi_SDTJBDG_MAT\\.${fmt === "PDF" ? "pdf" : "xlsx"}$`));
+  }
+
+  await page.goto("/tka/bandingkan");
+  const options = page.getByLabel("Try out awal").locator("option");
+  const a = await options.filter({ hasText: "TO 3 Matematika SD" }).getAttribute("value");
+  const b = await options.filter({ hasText: "TO 4 Matematika SD" }).getAttribute("value");
+  await page.goto(`/tka/bandingkan?a=${a}&b=${b}`);
+  await expect(page.getByRole("heading", { name: "Paling meningkat" })).toBeVisible();
+  await page.screenshot({ path: "test-results/tka-bandingkan.png", fullPage: true });
+});
+
+test("Super Admin membuka Pengaturan; manajemen tidak", async ({ browser }) => {
+  const sa = await login(browser, "superadmin");
+  await sa.goto("/pengaturan");
+  await expect(sa.getByLabel("Cakap mulai")).toHaveValue("70");
+  await expect(sa.getByText("Latihan pekanan otomatis 30%.")).toBeVisible();
+  await sa.screenshot({ path: "test-results/pengaturan.png", fullPage: true });
+
+  const viewer = await login(browser, "manajemen");
+  await viewer.goto("/pengaturan");
+  await expect(viewer).toHaveURL(/\/tidak-diizinkan/);
+});

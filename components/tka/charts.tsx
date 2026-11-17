@@ -149,16 +149,18 @@ export function LineTrend(props: {
       <SeriesLegend series={props.series} />
       <div style={{ height: props.height ?? 260 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 8, right: labelEnds ? 56 : 16, bottom: 4, left: 0 }}>
+          {/* Right margin holds end labels and the target label, outside the plot so they never sit on a line. */}
+          <LineChart data={rows} margin={{ top: 8, right: labelEnds || props.target != null ? 64 : 16, bottom: 4, left: 0 }}>
             <CartesianGrid stroke={GRID} vertical={false} />
             <XAxis dataKey="x" tickFormatter={xLabel} tick={{ fill: AXIS, fontSize: 12 }} stroke={GRID} tickMargin={6} />
-            <YAxis domain={props.yDomain ?? ["auto", "auto"]} tickFormatter={tick} tick={{ fill: AXIS, fontSize: 12 }} stroke={GRID} width={44} />
+            {/* Counts always start at zero so changes are not exaggerated. */}
+            <YAxis domain={props.yDomain ?? (props.unit === "count" ? [0, "auto"] : ["auto", "auto"])} tickFormatter={tick} tick={{ fill: AXIS, fontSize: 12 }} stroke={GRID} width={48} />
             {props.target != null ? (
               <ReferenceLine
                 y={props.target}
                 stroke="#4d4d4f"
                 strokeDasharray="4 4"
-                label={{ value: `Target ${props.target}`, position: "insideTopLeft", fill: "#4d4d4f", fontSize: 11 }}
+                label={{ value: `Target ${props.target}`, position: "right", fill: "#4d4d4f", fontSize: 11 }}
               />
             ) : null}
             <Tooltip
@@ -221,7 +223,7 @@ export function HistogramMultiples(props: {
               <BarChart data={g.bins} margin={{ top: 4, right: 4, bottom: 0, left: -24 }} barCategoryGap={2}>
                 <CartesianGrid stroke={GRID} vertical={false} />
                 <XAxis dataKey="label" tick={{ fill: AXIS, fontSize: 10 }} stroke={GRID} interval={1} />
-                <YAxis domain={[0, max]} allowDecimals={false} tick={{ fill: AXIS, fontSize: 10 }} stroke={GRID} />
+                <YAxis domain={[0, max]} ticks={[...new Set([0, Math.ceil(max / 2), max])]} allowDecimals={false} tick={{ fill: AXIS, fontSize: 10 }} stroke={GRID} />
                 <Tooltip
                   cursor={{ fill: "#f2f2f3" }}
                   content={({ active, payload }) =>
