@@ -17,6 +17,8 @@ export function ActionForm(props: {
   variant?: "default" | "outline" | "destructive";
   confirm?: string;
   className?: string;
+  /** For grid layouts: put the submit button on its own full-width row. */
+  stacked?: boolean;
   children?: React.ReactNode;
 }) {
   const [state, action, pending] = useActionState<State, FormData>(props.action, {});
@@ -29,10 +31,12 @@ export function ActionForm(props: {
       }}
     >
       {props.children}
-      <Button type="submit" variant={props.variant ?? "default"} disabled={pending}>
-        {pending ? (props.pendingLabel ?? "Menyimpan…") : props.submitLabel}
-      </Button>
-      <p role="status" aria-live="polite" className={cn("w-full text-sm", state.error ? "text-status-intervensi" : "text-status-cakap")}>
+      <div className={props.stacked ? "col-span-full" : "contents"}>
+        <Button type="submit" variant={props.variant ?? "default"} disabled={pending}>
+          {pending ? (props.pendingLabel ?? "Menyimpan…") : props.submitLabel}
+        </Button>
+      </div>
+      <p role="status" aria-live="polite" className={cn("col-span-full w-full text-sm", state.error ? "text-status-intervensi" : "text-status-cakap")}>
         {state.error ?? state.message ?? ""}
       </p>
     </form>

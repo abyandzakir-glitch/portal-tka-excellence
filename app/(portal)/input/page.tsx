@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ClipboardList, FileSpreadsheet, History, ListChecks, NotebookPen, Trophy } from "lucide-react";
+import { canWriteData } from "@/lib/auth/roles";
+import { WeekStatusBoard } from "./week-status";
 import { EmptyState, PageHeader, TableSkeleton } from "@/components/layout/page";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { queryAsUser, requireUser } from "@/lib/auth/session";
@@ -39,22 +41,28 @@ const CARDS = [
   },
 ] as const;
 
-export default function InputPekananPage() {
+export default function InputPekananPage(props: PageProps<"/input">) {
   return (
     <>
       <PageHeader
         title="Input Pekanan"
-        description="Unggah data TKA sekolah Anda. Sistem membaca file Excel/CSV, mencocokkan kolom dan siswa secara otomatis, lalu menampilkan pratinjau sebelum data disimpan."
+        description="Kelengkapan data pekan ini per sekolah, unggah data baru, dan riwayat unggahan. Sistem membaca file Excel/CSV, mencocokkan kolom dan siswa secara otomatis, lalu menampilkan pratinjau sebelum data disimpan."
       />
-      <Suspense fallback={<TableSkeleton rows={6} />}>
-        <InputContent />
-      </Suspense>
+      <div className="space-y-8">
+        <Suspense fallback={<TableSkeleton rows={5} />}>
+          <WeekStatusBoard searchParams={props.searchParams} />
+        </Suspense>
+        <Suspense fallback={<TableSkeleton rows={6} />}>
+          <InputContent />
+        </Suspense>
+      </div>
     </>
   );
 }
 
 async function InputContent() {
-  await requireUser(["super_admin", "school_admin"]);
+  const user = await requireUser();
+  if (!canWriteData(user.role)) return null;
   const batches = await queryAsUser((tx) => listRecentBatches(tx));
 
   return (

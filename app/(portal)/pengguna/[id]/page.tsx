@@ -52,7 +52,7 @@ async function Content({ params }: { params: PageProps<"/pengguna/[id]">["params
 
       <section className="rounded-lg border border-border bg-white p-5" aria-labelledby="peran-judul">
         <h2 id="peran-judul" className="mb-3 font-heading text-base font-semibold">Nama, peran, dan sekolah</h2>
-        <ActionForm action={updateUser} submitLabel="Simpan perubahan" className="grid gap-3 sm:grid-cols-2">
+        <ActionForm action={updateUser} stacked submitLabel="Simpan perubahan" className="grid gap-3 sm:grid-cols-2">
           <input type="hidden" name="id" value={user.id} />
           <div className="space-y-1 sm:col-span-2">
             <Label htmlFor="ubah-nama">Nama lengkap</Label>

@@ -167,6 +167,9 @@ async function main() {
     check("tidak bisa menambah data", err !== null);
     const upd = await q`update public.achievements set notes = 'x' where true`;
     check("tidak bisa mengubah prestasi", upd.count === 0);
+    const [{ name }] = await q<{ name: string | null }[]>`select app.staff_name(${adminSdBdg.id}) as name`;
+    const [{ n: seen }] = await q<{ n: number }[]>`select count(*)::int as n from public.profiles`;
+    check("melihat nama pengunggah, tetapi tidak membaca profil lain", name !== null && seen === 1);
   });
 
   console.log("\nGuru SDTJBDG");
@@ -205,6 +208,8 @@ async function main() {
     const [{ n }] = await q<{ n: number }[]>`select count(*)::int as n from public.students`;
     const [{ m }] = await q<{ m: number }[]>`select count(*)::int as m from public.schools`;
     check("akun tanpa profil aktif tidak melihat apa pun", n === 0 && m === 0);
+    const [{ name }] = await q<{ name: string | null }[]>`select app.staff_name(${superAdmin.id}) as name`;
+    check("akun tanpa profil aktif tidak mendapat nama pengguna", name === null);
   });
 
   // ---------------------------------------------------------------------------

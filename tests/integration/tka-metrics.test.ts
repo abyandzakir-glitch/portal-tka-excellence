@@ -12,6 +12,7 @@ import postgres from "postgres";
 import * as schema from "../../lib/db/schema";
 import type { RlsTx } from "../../lib/db/rls";
 import { parseTkaFilters } from "../../lib/tka/filters";
+import { loadWeekStatus } from "../../lib/queries/input-status";
 import { loadCompetencyStudents, loadContext, loadNetworkView, loadSchoolView, loadStudentView, type TkaContext } from "../../lib/tka/load";
 
 const TODAY = "2026-11-17";
@@ -183,6 +184,34 @@ async function main() {
   // Period filter: semester 2 has no data yet -> empty but no crash.
   const s2 = await asUser(superAdmin, async (tx) => loadNetworkView(tx, await ctxFor(tx, { periode: "s2" })));
   check("periode tanpa data menghasilkan KPI kosong (bukan error)", s2.kpis.average === null && s2.kpis.practiceThisWeek === 0);
+
+  // ---------------------------------------------------------------------------
+  console.log("\nPusat Input Pekanan — pekan 16–22 Nov 2026");
+  const board = await asUser(superAdmin, (tx) => loadWeekStatus(tx, "2026-11-16"));
+  const roster = await client<{ code: string; n: number; logged: number }[]>`
+    select s.school_code as code, count(distinct st.id)::int as n,
+      (select count(distinct p.student_id)::int from public.practice_logs p where p.school_id = s.id and p.week_start = '2026-11-16') as logged
+    from public.schools s join public.students st on st.school_id = s.id and st.is_active group by s.id, s.school_code`;
+  check("lima sekolah tampil", board.length === 5);
+  for (const e of roster) {
+    const b = board.find((x) => x.code === e.code)!;
+    const want = e.logged === 0 ? "belum" : e.logged >= e.n ? "lengkap" : "sebagian";
+    check(`${e.code}: latihan ${e.logged}/${e.n} siswa → ${want}`, b.expected === e.n && b.practice.students === e.logged && b.practice.status === want, `${b.practice.students}/${b.expected} ${b.practice.status}`);
+    check(`${e.code}: TO 4 (14 Nov) jatuh tempo, 2 mapel`, b.tryouts.length === 2 && b.tryouts.every((t) => t.name.startsWith("TO 4")));
+  }
+  const pkuBoard = board.find((x) => x.code === "SDTJPKU")!;
+  const pkuBin = pkuBoard.tryouts.find((t) => t.name.includes("Bahasa Indonesia"))!;
+  check("SDTJPKU B. Indonesia nilai total saja → Sebagian", pkuBin.status === "sebagian" && pkuBin.totalsOnly > 0, `${pkuBin.status} ${pkuBin.totalsOnly}`);
+  check("SDTJPKU status keseluruhan bukan Lengkap", pkuBoard.overall !== "lengkap");
+  const bdgBoard = board.find((x) => x.code === "SDTJBDG")!;
+  check("SDTJBDG hasil TO lengkap (hadir + tidak hadir, per butir)", bdgBoard.tryouts.every((t) => t.status === "lengkap"), bdgBoard.tryouts.map((t) => `${t.scored}/${bdgBoard.expected} ${t.status}`).join(", "));
+  const next = await asUser(superAdmin, (tx) => loadWeekStatus(tx, "2026-11-23"));
+  check("pekan tanpa data: latihan Belum, tidak ada TO jatuh tempo", next.every((x) => x.practice.status === "belum" && x.tryouts.length === 0 && x.overall === "belum"));
+  const ownOnly = await asUser(adminBdg, (tx) => loadWeekStatus(tx, "2026-11-16"));
+  check("Admin Sekolah hanya melihat sekolahnya", ownOnly.length === 1 && ownOnly[0]!.code === "SDTJBDG");
+  const viewerId = user("manajemen");
+  const viewerBoard = await asUser(viewerId, (tx) => loadWeekStatus(tx, "2026-11-16"));
+  check("Manajemen melihat kelima sekolah", viewerBoard.length === 5);
 
   console.log(`\n${passes} lulus, ${failures} gagal`);
   if (failures > 0) process.exitCode = 1;

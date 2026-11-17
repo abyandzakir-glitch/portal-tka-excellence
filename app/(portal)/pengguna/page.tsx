@@ -41,7 +41,7 @@ async function Content() {
       <section className="max-w-3xl rounded-lg border border-border bg-white p-5" aria-labelledby="undang-judul">
         <h2 id="undang-judul" className="font-heading text-base font-semibold">Undang pengguna</h2>
         <p className="mb-3 text-sm text-brand-gray-light">Pengguna menerima email berisi tautan untuk membuat kata sandi. Tautan berlaku 24 jam.</p>
-        <ActionForm action={inviteUser} submitLabel="Kirim undangan" pendingLabel="Mengirim…" className="grid gap-3 sm:grid-cols-2">
+        <ActionForm action={inviteUser} stacked submitLabel="Kirim undangan" pendingLabel="Mengirim…" className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
             <Label htmlFor="baru-nama">Nama lengkap</Label>
             <Input id="baru-nama" name="nama" required maxLength={200} className="h-9" />

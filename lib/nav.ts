@@ -26,7 +26,8 @@ export const NAV: NavSection[] = [
   },
   {
     title: "Data",
-    items: [{ href: "/input", label: "Input Pekanan", icon: "upload", roles: WRITERS }],
+    // Everyone sees the weekly status board; upload controls are shown to writers only.
+    items: [{ href: "/input", label: "Input Pekanan", icon: "upload" }],
   },
   {
     title: "Master Data",

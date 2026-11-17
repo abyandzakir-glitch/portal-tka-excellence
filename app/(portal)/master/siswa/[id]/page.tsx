@@ -56,7 +56,7 @@ async function Content({ params }: { params: PageProps<"/master/siswa/[id]">["pa
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader title={s.fullName} description={`NIS ${s.nis} · ${data.schoolName}${s.isActive ? "" : " · Nonaktif"}`} />
-      <ActionForm action={saveStudent} submitLabel="Simpan perubahan" className="grid gap-4 rounded-lg border border-border bg-white p-5 sm:grid-cols-2">
+      <ActionForm action={saveStudent} stacked submitLabel="Simpan perubahan" className="grid gap-4 rounded-lg border border-border bg-white p-5 sm:grid-cols-2">
         <input type="hidden" name="id" value={s.id} />
         <div className="space-y-1 sm:col-span-2">
           <Label htmlFor="nama">Nama lengkap</Label>

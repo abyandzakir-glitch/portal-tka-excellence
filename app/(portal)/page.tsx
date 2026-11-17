@@ -30,9 +30,9 @@ async function HomeContent() {
   const shortcuts = [
     { href: "/tka", label: "TKA Dashboard", desc: "Nilai try out, latihan, dan penguasaan kompetensi.", icon: BarChart3 },
     { href: "/prestasi", label: "Prestasi", desc: "Rekap prestasi per sekolah, tingkat, dan kategori.", icon: Trophy },
-    ...(canWriteData(user.role)
-      ? [{ href: "/input", label: "Input Pekanan", desc: "Unggah data pekan ini.", icon: Upload }]
-      : []),
+    canWriteData(user.role)
+      ? { href: "/input", label: "Input Pekanan", desc: "Unggah data pekan ini dan pantau kelengkapannya.", icon: Upload }
+      : { href: "/input", label: "Input Pekanan", desc: "Pantau sekolah mana yang sudah dan belum mengisi data pekan ini.", icon: Upload },
   ];
 
   return (

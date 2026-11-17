@@ -123,6 +123,13 @@ Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, han
 - **[Disetujui]** **Peran Guru/Wali Kelas ditunda**; saat ini guru melihat dashboard sekolahnya dan mencatat intervensi.
 - **[Disetujui]** **Deploy**: konfigurasi dan langkah disiapkan; menghubungkan repositori ke akun Vercel yayasan dilakukan pemilik akun.
 
+### Keputusan kecil Fase 5
+- **Status Pusat Input Pekanan** (aturan lengkap di `docs/METRICS.md`): siswa yang diharapkan = siswa aktif kelas 6 (SD) / 9 (SMP) pada TA aktif. *Latihan* Lengkap bila semua siswa itu punya catatan latihan pekan tersebut. *Hasil TO* dihitung untuk TO yang dilaksanakan pekan ini atau pekan lalu; Lengkap bila semua siswa punya baris nilai (hadir/tidak hadir) dan jawaban per butir; nilai total saja = Sebagian. *Prestasi* hanya informasi dan tidak memengaruhi status, karena pekan tanpa lomba itu wajar.
+- **Nama pengunggah** untuk Manajemen/Admin Sekolah dibaca lewat fungsi `app.staff_name()` (migrasi 0006) yang hanya mengembalikan nama tampilan, bukan email/peran, dan hanya untuk pengguna aktif. RLS profil tetap: selain Super Admin hanya bisa membaca profilnya sendiri.
+- **Menonaktifkan akun** = `profiles.is_active = false` **dan** *ban* di Supabase Auth, sehingga sesi lama tidak bisa diperpanjang. Super Admin tidak bisa menonaktifkan atau menurunkan peran akunnya sendiri (mencegah terkunci).
+- **NIS tidak bisa diubah** dari formulir siswa karena menjadi kunci pencocokan impor; koreksi NIS lewat Super Admin.
+- **Kode sub-kompetensi baru** dibuat otomatis `<KODE ELEMEN>-NN` (nomor berikutnya yang kosong) agar konsisten dengan seed.
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.
