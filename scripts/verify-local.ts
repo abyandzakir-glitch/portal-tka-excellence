@@ -100,6 +100,10 @@ async function main() {
       console.log("\n== Uji impor (commit, ganti, batalkan) ==");
       code = await runScript("tests/integration/import.test.ts", { ...env, IMPORT_TEST_ALLOW_WRITE: "1" });
     }
+    if (code === 0) {
+      console.log("\n== File contoh impor (rapi & berantakan) ==");
+      code = await runScript("scripts/import-examples.ts", env);
+    }
   } finally {
     await pg.stop();
   }
