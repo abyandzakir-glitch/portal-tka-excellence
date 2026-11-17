@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { queryAsUser, requireUser } from "@/lib/auth/session";
 import { schools, settings, subjects } from "@/lib/db/schema";
+import { CATEGORIES, LEVELS, RANKS } from "@/lib/achievements/labels";
 import { SETTING_KEYS } from "@/lib/settings/defaults";
 import { minItemsSchema, riskSchema, targetSchema, thresholdsSchema, weightsSchema } from "@/lib/settings/tka";
 
@@ -36,6 +37,16 @@ export async function saveSettings(_prev: SettingsState, fd: FormData): Promise<
   const risk = riskSchema.safeParse({ consecutiveBelowTarget: num(fd, "toBerturut"), maxDropPoints: num(fd, "turunMaks") });
   if (!risk.success) return { error: "Aturan siswa berisiko tidak valid: jumlah TO 1–10, penurunan 0–100 poin." };
 
+  // Achievement points (§8.2): weight per level × weight per rank. NONE = unknown level / no standard rank.
+  const pointWeights = { level: {} as Record<string, number>, rank: {} as Record<string, number> };
+  for (const l of [...LEVELS, "NONE"]) pointWeights.level[l] = num(fd, `poinTingkat:${l}`);
+  for (const r of [...RANKS, "NONE"]) pointWeights.rank[r] = num(fd, `poinPeringkat:${r}`);
+  if ([...Object.values(pointWeights.level), ...Object.values(pointWeights.rank)].some((v) => !Number.isFinite(v) || v < 0 || v > 100)) {
+    return { error: "Bobot Poin Prestasi harus angka 0–100." };
+  }
+  const academicGroup = fd.getAll("akademik").map(String).filter((v): v is (typeof CATEGORIES)[number] => (CATEGORIES as readonly string[]).includes(v));
+  if (academicGroup.length === 0) return { error: "Pilih minimal satu kategori yang dihitung sebagai Akademik." };
+
   try {
     await queryAsUser(async (tx) => {
       const subjectRows = await tx.select({ id: subjects.id }).from(subjects);
@@ -52,6 +63,8 @@ export async function saveSettings(_prev: SettingsState, fd: FormData): Promise<
       await upsert(SETTING_KEYS.masteryMinItems, minItems.data);
       await upsert(SETTING_KEYS.riskRules, risk.data);
       await upsert(SETTING_KEYS.aiExtraction, fd.get("ai") === "on");
+      await upsert(SETTING_KEYS.achievementPoints, pointWeights);
+      await upsert(SETTING_KEYS.achievementAcademicGroup, academicGroup);
 
       for (const s of subjectRows) {
         const global = targetSchema.safeParse(num(fd, `target:${s.id}`));

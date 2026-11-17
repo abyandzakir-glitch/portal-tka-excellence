@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CATEGORIES, CATEGORY_LABEL, LEVEL_LABEL, LEVELS, RANK_LABEL, RANKS } from "@/lib/achievements/labels";
 import { saveSettings, type SettingsState } from "./actions";
 
 export interface SettingsFormValues {
@@ -18,6 +19,8 @@ export interface SettingsFormValues {
   /** `${subjectId}:${schoolId}` -> override */
   overrides: Record<string, number>;
   subjectLevels: Record<string, "sd" | "smp">;
+  points: { level: Record<string, number>; rank: Record<string, number> };
+  academicGroup: string[];
 }
 
 function NumberField(props: { id: string; label: string; defaultValue: number; suffix?: string; hint?: string; step?: string; min?: number; max?: number }) {
@@ -112,6 +115,43 @@ export function SettingsForm({ values }: { values: SettingsFormValues }) {
               ))}
             </tbody>
           </table>
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-3 rounded-lg border border-border bg-white p-5">
+        <legend className="px-1 font-heading text-base font-semibold">Poin Prestasi dan kelompok Akademik</legend>
+        <p className="text-sm text-brand-gray-light">Poin satu prestasi = bobot tingkat × bobot peringkat. Dipakai untuk membandingkan sekolah secara adil di dashboard Prestasi.</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Bobot tingkat</h3>
+            {[...LEVELS, "NONE" as const].map((l) => (
+              <label key={l} className="flex items-center justify-between gap-3 text-sm">
+                <span>{l === "NONE" ? "Tingkat tidak diketahui" : LEVEL_LABEL[l]}</span>
+                <Input name={`poinTingkat:${l}`} type="number" min={0} max={100} step="0.5" defaultValue={values.points.level[l]} className="h-8 w-24" required />
+              </label>
+            ))}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Bobot peringkat</h3>
+            {[...RANKS, "NONE" as const].map((r) => (
+              <label key={r} className="flex items-center justify-between gap-3 text-sm">
+                <span>{r === "NONE" ? "Tanpa peringkat baku (mis. partisipasi)" : RANK_LABEL[r]}</span>
+                <Input name={`poinPeringkat:${r}`} type="number" min={0} max={100} step="0.5" defaultValue={values.points.rank[r]} className="h-8 w-24" required />
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold">Kategori yang dihitung sebagai “Akademik”</h3>
+          <p className="text-xs text-brand-gray-light">Dipakai di diagram Akademik vs Non-Akademik. Kategori lain dihitung Non-Akademik.</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+            {CATEGORIES.map((cat) => (
+              <label key={cat} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="akademik" value={cat} defaultChecked={values.academicGroup.includes(cat)} />
+                {CATEGORY_LABEL[cat]}
+              </label>
+            ))}
+          </div>
         </div>
       </fieldset>
 

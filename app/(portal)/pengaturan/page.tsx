@@ -6,6 +6,7 @@ import { queryAsUser, requireUser } from "@/lib/auth/session";
 import { schools, settings, subjects } from "@/lib/db/schema";
 import { DEFAULT_AI_EXTRACTION_ENABLED, SETTING_KEYS } from "@/lib/settings/defaults";
 import { loadTkaSettings } from "@/lib/settings/tka";
+import { loadAchievementSettings } from "@/lib/achievements/load";
 import { SettingsForm } from "./settings-form";
 
 export const metadata: Metadata = { title: "Pengaturan" };
@@ -15,7 +16,7 @@ export default function PengaturanPage() {
     <>
       <PageHeader
         title="Pengaturan"
-        description="Ambang status penguasaan, bobot perhitungan, target nilai TO, aturan siswa berisiko, dan saklar fitur AI. Perubahan langsung berlaku di semua dashboard dan tercatat di audit log."
+        description="Ambang status penguasaan, bobot perhitungan, target nilai TO, aturan siswa berisiko, Poin Prestasi, dan saklar fitur AI. Perubahan langsung berlaku di semua dashboard dan tercatat di audit log."
       />
       <Suspense fallback={<TableSkeleton rows={8} />}>
         <Content />
@@ -26,8 +27,9 @@ export default function PengaturanPage() {
 
 async function Content() {
   await requireUser(["super_admin"]);
-  const { tka, subjectRows, schoolRows, targetRows, ai } = await queryAsUser(async (tx) => ({
+  const { tka, subjectRows, schoolRows, targetRows, ai, achievement } = await queryAsUser(async (tx) => ({
     tka: await loadTkaSettings(tx),
+    achievement: await loadAchievementSettings(tx),
     subjectRows: await tx.select().from(subjects).orderBy(asc(subjects.level), asc(subjects.sortOrder)),
     schoolRows: await tx.select().from(schools).orderBy(asc(schools.level), asc(schools.schoolCode)),
     targetRows: await tx.select().from(settings).where(eq(settings.key, SETTING_KEYS.tryoutTarget)),
@@ -48,6 +50,8 @@ async function Content() {
         schools: schoolRows.map((s) => ({ id: s.id, name: s.name, level: s.level })),
         overrides,
         subjectLevels: Object.fromEntries(subjectRows.map((s) => [s.id, s.level])),
+        points: achievement.weights as unknown as { level: Record<string, number>; rank: Record<string, number> },
+        academicGroup: achievement.academicGroup,
       }}
     />
   );

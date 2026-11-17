@@ -87,6 +87,12 @@ test("super admin membuka pengguna, kelola akun, dan ubah siswa", async ({ brows
   await page.goto("/master/kompetensi");
   await expect(page.getByText(/Tambah sub-kompetensi di/).first()).toBeVisible();
 
+  await page.goto("/pengaturan");
+  await expect(page.getByText("Poin Prestasi dan kelompok Akademik")).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Akademik", exact: true })).toBeChecked();
+  await page.getByText("Poin Prestasi dan kelompok Akademik").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/pengaturan-poin.png" });
+
   await page.goto("/audit");
   await expect(page.getByRole("heading", { name: "Audit Log" })).toBeVisible();
   await page.getByLabel("Data").selectOption("import_batches");
