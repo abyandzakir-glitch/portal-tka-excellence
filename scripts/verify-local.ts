@@ -97,6 +97,10 @@ async function main() {
       code = await runScript("tests/integration/rls.test.ts", env);
     }
     if (code === 0) {
+      console.log("\n== Verifikasi angka dashboard TKA vs perhitungan manual ==");
+      code = await runScript("tests/integration/tka-metrics.test.ts", env);
+    }
+    if (code === 0) {
       console.log("\n== Uji impor (commit, ganti, batalkan) ==");
       code = await runScript("tests/integration/import.test.ts", { ...env, IMPORT_TEST_ALLOW_WRITE: "1" });
     }
