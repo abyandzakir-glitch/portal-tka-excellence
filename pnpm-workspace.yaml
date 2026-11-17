@@ -1,0 +1,6 @@
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+  esbuild: true
+  # Postinstall only re-creates local symlinks inside the package (reviewed).
+  "@embedded-postgres/windows-x64": true
