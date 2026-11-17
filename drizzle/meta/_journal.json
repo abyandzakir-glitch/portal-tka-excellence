@@ -15,6 +15,20 @@
       "when": 1794891555755,
       "tag": "0001_rls_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794901609403,
+      "tag": "0002_import_batches_phase2",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794901632160,
+      "tag": "0003_storage_import_guard",
+      "breakpoints": true
     }
   ]
 }

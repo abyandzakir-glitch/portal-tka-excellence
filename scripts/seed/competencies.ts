@@ -134,24 +134,4 @@ export function subCode(s: SubjectSeed, el: ElementSeed, index: number) {
   return `${elementCode(s, el)}-${String(index + 1).padStart(2, "0")}`;
 }
 
-/**
- * Cognitive levels used on blueprint items (CLAUDE.md §7.1). The spec defines
- * them for Mathematics only; Bahasa Indonesia items keep cognitive_level empty.
- */
-export const COGNITIVE_LEVELS: Record<Level, Record<"MAT" | "BIN", string[]>> = {
-  // SD Mathematics uses competency dimensions instead of the SMP 1–3 levels.
-  sd: {
-    MAT: [
-      "Pengetahuan matematika",
-      "Representasi matematis",
-      "Penalaran",
-      "Pemecahan masalah matematis",
-      "Koneksi matematis",
-    ],
-    BIN: [],
-  },
-  smp: {
-    MAT: ["Level 1 — Pengetahuan dan Pemahaman", "Level 2 — Aplikasi", "Level 3 — Penalaran"],
-    BIN: [],
-  },
-};
+export { COGNITIVE_LEVELS } from "../../lib/tka/cognitive-levels";

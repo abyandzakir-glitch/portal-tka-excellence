@@ -73,7 +73,8 @@ export const importType = pgEnum("import_type", [
   "practice_logs",
   "achievements",
 ]);
-export const importStatus = pgEnum("import_status", ["draft", "committed", "rolled_back", "failed"]);
+/** superseded = replaced by a newer upload for the same scope (e.g. same TO + school). */
+export const importStatus = pgEnum("import_status", ["draft", "committed", "rolled_back", "failed", "superseded"]);
 export const importRowStatus = pgEnum("import_row_status", ["ok", "warning", "error", "skipped"]);
 
 const timestamps = {
@@ -235,17 +236,30 @@ export const importBatches = pgTable(
     type: importType("type").notNull(),
     filePath: text("file_path"),
     originalFilename: text("original_filename"),
+    /** Layout + column mapping + upload options (sheet, header row, TO, default week…). */
     mappingJson: jsonb("mapping_json"),
+    /** Parsed cells of every sheet, so the mapping can be changed without re-uploading. */
+    sourceJson: jsonb("source_json"),
+    /** Data this batch replaced when committed; restored on rollback. */
+    snapshotJson: jsonb("snapshot_json"),
+    /** Try-out the batch belongs to (blueprint & results imports). */
+    tryoutId: uuid("tryout_id").references((): AnyPgColumn => tryouts.id, { onDelete: "set null" }),
+    /** Newer batch that replaced this one (status = superseded). */
+    supersededBy: uuid("superseded_by").references((): AnyPgColumn => importBatches.id, { onDelete: "set null" }),
     status: importStatus("status").notNull().default("draft"),
     rowCount: integer("row_count").notNull().default(0),
     errorCount: integer("error_count").notNull().default(0),
+    warningCount: integer("warning_count").notNull().default(0),
     createdBy: uuid("created_by").references(() => profiles.id),
     committedAt: timestamp("committed_at", { withTimezone: true }),
     rolledBackAt: timestamp("rolled_back_at", { withTimezone: true }),
     rolledBackBy: uuid("rolled_back_by").references(() => profiles.id),
     ...timestamps,
   },
-  (t) => [index("import_batches_school_idx").on(t.schoolId, t.createdAt)],
+  (t) => [
+    index("import_batches_school_idx").on(t.schoolId, t.createdAt),
+    index("import_batches_tryout_idx").on(t.tryoutId, t.schoolId),
+  ],
 );
 
 export const importRows = pgTable(
