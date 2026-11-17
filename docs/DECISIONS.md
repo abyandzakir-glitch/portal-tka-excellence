@@ -60,6 +60,13 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 - **Verifikasi lokal tanpa Supabase** (`pnpm verify:local`): PostgreSQL 17 sementara (paket `embedded-postgres`, dikunci ke 17.9 agar sama dengan versi mayor Supabase) + stub skema `auth`. PGlite sempat dicoba tetapi ditinggalkan karena emulasi protokol socket-nya memutus koneksi pada transaksi.
 - **Prepared statement**: seed & uji RLS memakai `prepare: true` pada koneksi langsung (`DATABASE_URL_DIRECT`); aplikasi memakai `prepare: false` karena lewat pooler mode transaksi (port 6543).
 
+## 2026-11-17 — Fase 2 (disetujui)
+
+- **[Disetujui]** **Kisi-kisi TO**: Super Admin mengunggah kisi untuk TO bersama jaringan; admin sekolah boleh membuat TO khusus sekolahnya sendiri. **Hasil TO** selalu diunggah oleh admin masing-masing sekolah (Super Admin juga bisa, atas nama sekolah mana pun).
+- **[Disetujui]** **Unggah ulang hasil TO** untuk TO + sekolah yang sama **menggantikan** data sebelumnya. Batch lama ditandai *Digantikan*; data lama disimpan sebagai snapshot di batch baru, sehingga bila batch baru dibatalkan, data lama dipulihkan.
+- **[Disetujui]** **Siswa yang tidak ada di master** → baris *error* dengan saran nama mirip, tidak disimpan, tidak dibuat otomatis.
+- **[Disetujui]** **Semua jawaban kosong** di hasil TO → siswa dianggap **absen**. Jawaban kosong sebagian → butir itu "tidak dijawab" (dihitung salah).
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.
