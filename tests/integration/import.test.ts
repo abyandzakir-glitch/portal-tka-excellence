@@ -231,6 +231,48 @@ async function main() {
   await asUser(superAdmin, (tx) => rollbackBatch(tx, be.id, superAdmin));
   check("batalkan perubahan kisi → nilai kembali seperti semula", JSON.stringify(await scoreState(to4!.id, SDTJBDG)) === JSON.stringify(scoresBefore));
 
+  // ---------------------------------------------------------------------------
+  console.log("\nPrestasi: rekap berantakan, unggah ulang kumulatif, isolasi, batalkan");
+  const achState = async () =>
+    one(client<{ a: number; p: number }[]>`
+      select (select count(*)::int from public.achievements where school_id = ${SDTJBDG}) as a,
+             (select count(*)::int from public.achievement_participants where school_id = ${SDTJBDG}) as p`);
+  const achBefore = await achState();
+  const [s1, s2, s3] = roster;
+  const recap: Cell[][] = [
+    ["REKAP PRESTASI SISWA (contoh anonim)"],
+    [null],
+    ["No", "TANGGAL", "NAMA SISWA", "KELAS", "NAMA PERLOMBAAN/ EVENT", "JENIS/BIDANG PERLOMBAAN", "TINGKAT, KOTA PERLOMBAAN", "HASIL PERLOMBAAN"],
+    [1, "3 November 2026", s1!.full_name, "6A", "Olimpiade Sains Uji", "Matematika", "Nasional, Online", "Medali Perak"],
+    [2, "14-15 November 2026", `${s2!.full_name}, ${s3!.full_name} dan Nama Panggilan`, "6A", "Lomba Cerdas Cermat Uji", "Cerdas Cermat", "Kota Bandung", "Juara 1 Kategori Umum"],
+    [3, "Oktober", s1!.full_name, "6A", "Kejuaraan Renang Uji", "Renang 25 m", "Kecamatan", "Medali Partisipasi"],
+  ];
+  const a1 = await upload(adminBdg, "achievements", SDTJBDG, recap, {});
+  check("pratinjau prestasi tanpa error", a1.config.summary.error === 0 && a1.config.summary.ok + a1.config.summary.warning === 3, JSON.stringify(a1.config.summary));
+  await asUser(adminBdg, (tx) => commitBatch(tx, a1.id, adminBdg));
+  const achAfter = await achState();
+  // Participants: 1 + 3 (team incl. a nickname) + 1 = 5.
+  check("3 prestasi & 5 peserta tersimpan (nama panggilan disimpan apa adanya)", achAfter.a === achBefore.a + 3 && achAfter.p === achBefore.p + 5, JSON.stringify({ achBefore, achAfter }));
+  const [team] = await client<{ rank: string; level: string; category: string; notes: string; matched: number }[]>`
+    select a.rank, a.level, a.category, a.notes,
+           (select count(*)::int from public.achievement_participants p where p.achievement_id = a.id and p.student_id is not null) as matched
+      from public.achievements a where a.import_batch_id = ${a1.id} and a.competition_name = 'Lomba Cerdas Cermat Uji'`;
+  check("peringkat/tingkat/kategori dinormalkan, 2 dari 3 nama cocok ke master", team?.rank === "JUARA_1" && team.level === "KOTA_KABUPATEN" && team.category === "AKADEMIK" && team.matched === 2, JSON.stringify(team));
+  check("tanggal perkiraan & hasil asli tercatat di Catatan", /Tanggal perkiraan/.test(team!.notes) && /Hasil asli: Juara 1 Kategori Umum/.test(team!.notes));
+
+  const a2 = await upload(adminBdg, "achievements", SDTJBDG, recap, {});
+  check("unggah ulang file yang sama: semua baris dilewati, tidak ada data ganda", a2.config.summary.skipped === 3 && a2.config.fileIssues.some((i) => /sudah tersimpan/.test(i.message)), JSON.stringify(a2.config));
+  const noCommit = await expectError(() => asUser(adminBdg, (tx) => commitBatch(tx, a2.id, adminBdg)));
+  check("…dan tidak ada yang bisa disimpan", noCommit !== null);
+
+  const crossAch = await expectError(() =>
+    upload(adminBdg, "achievements", null, [["Tanggal", "Sekolah", "Nama Siswa", "Nama Lomba"], ["1 November 2026", "SMPTJPKU", "X", "Lomba Y"]], {}),
+  );
+  check("admin sekolah tidak bisa membuat impor prestasi jaringan (tanpa sekolah)", crossAch !== null && /row-level security/i.test(crossAch), crossAch ?? "berhasil");
+
+  await asUser(superAdmin, (tx) => rollbackBatch(tx, a1.id, superAdmin));
+  check("batalkan → prestasi & peserta kembali seperti semula", JSON.stringify(await achState()) === JSON.stringify(achBefore));
+
   console.log(`\n${passes} lulus, ${failures} gagal`);
   if (failures > 0) process.exitCode = 1;
 }

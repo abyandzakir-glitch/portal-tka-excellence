@@ -5,6 +5,7 @@ import { queryAsUser, requireUser } from "@/lib/auth/session";
 import { schools, subjects, tryouts, tryoutSchools } from "@/lib/db/schema";
 import { todayIso } from "@/lib/format/id";
 import { cognitiveLevelsFor, loadCompetencies, loadRoster, loadSubjects, loadTryoutItems } from "@/lib/import/db/context";
+import { buildAchievementTemplate } from "@/lib/import/templates/achievements";
 import { buildBlueprintTemplate, buildPracticeTemplate, buildResultsTemplate } from "@/lib/import/templates/tka";
 import { parseWeekStart } from "@/lib/import/values";
 
@@ -102,6 +103,16 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/input/template/[
       students: data.roster.students,
     });
     return file(bytes, `Template_Latihan_Pekanan_${data.s.schoolCode}_${week}.xlsx`);
+  }
+
+  if (jenis === "prestasi") {
+    const requested = ownSchool ?? q.get("sekolah");
+    const data = await queryAsUser(async (tx) => {
+      const list = await tx.select({ id: schools.id, code: schools.schoolCode, name: schools.name }).from(schools);
+      return { list, chosen: requested && id.safeParse(requested).success ? (list.find((s) => s.id === requested) ?? null) : null };
+    });
+    const bytes = buildAchievementTemplate({ schools: data.list.sort((a, b) => a.code.localeCompare(b.code)), schoolCode: data.chosen?.code ?? null });
+    return file(bytes, `Template_Prestasi${data.chosen ? `_${data.chosen.code}` : ""}.xlsx`);
   }
 
   return notFound("Template tidak dikenal.");

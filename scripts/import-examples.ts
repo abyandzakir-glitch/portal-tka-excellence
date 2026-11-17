@@ -22,6 +22,7 @@ import { loadCompetencies } from "../lib/import/db/context";
 import { createDraftBatch } from "../lib/import/db/create";
 import type { TkaImportKind } from "../lib/import/pipeline";
 import { readTabularFile, type Cell } from "../lib/import/sheet";
+import { buildAchievementTemplate } from "../lib/import/templates/achievements";
 import { buildBlueprintTemplate, buildPracticeTemplate, buildResultsTemplate } from "../lib/import/templates/tka";
 import { COGNITIVE_LEVELS } from "../lib/tka/cognitive-levels";
 
@@ -236,6 +237,43 @@ async function main() {
         ],
         merges: [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }],
       },
+    ]),
+  });
+
+  // --- Prestasi -------------------------------------------------------------------
+  const allSchools = await client<{ code: string; name: string }[]>`select school_code as code, name from public.schools order by school_code`;
+  const standard = buildAchievementTemplate({ schools: allSchools });
+  mkdirSync(join(OUT, "..", "templates"), { recursive: true });
+  writeFileSync(join(OUT, "..", "templates", "Ringkasan_Prestasi_2026_Template_Standar.xlsx"), standard);
+  const [s1, s2, s3, s4] = students;
+  files.push({
+    file: "prestasi-SDTJBDG_template.xlsx",
+    kind: "achievements",
+    schoolId: school!.id,
+    options: {},
+    bytes: fill(standard, "Data Prestasi", [
+      ["03/11/2026", "SDTJBDG", s1!.fullName, "Olimpiade Sains Contoh 2026", "AKADEMIK", "NASIONAL", "MEDALI_PERAK", "Lembaga Kompetisi Contoh", "https://contoh.test/sertifikat/1", `Kelas: ${s1!.className}`],
+      ["2026-11-08", "SDTJBDG", `${s2!.fullName}, ${s3!.fullName}`, "Lomba Cerdas Cermat Contoh", "AKADEMIK", "KOTA_KABUPATEN", "JUARA_1", "Dinas Pendidikan Contoh", null, null],
+      ["2026-10-25", "SDTJBDG", s4!.fullName, "Kejuaraan Renang Contoh", "OLAHRAGA", "PROVINSI", null, "Klub Renang Contoh", null, "Medali Partisipasi"],
+    ]),
+  });
+  files.push({
+    file: "prestasi-SDTJBDG_berantakan.xlsx",
+    kind: "achievements",
+    schoolId: school!.id,
+    options: {},
+    bytes: xlsx([
+      {
+        name: "Sheet1",
+        rows: [
+          ["No", "TANGGAL", "NAMA SISWA", "KELAS", "NAMA PERLOMBAAN/ EVENT", "PENYELENGGARA LOMBA", "JENIS/BIDANG PERLOMBAAN", "TINGKAT, KOTA PERLOMBAAN", "HASIL PERLOMBAAN"],
+          [1, "3 November 2026", s1!.fullName, s1!.className, "OLIMPIADE SAINS CONTOH 2026", "Lembaga Kompetisi Contoh", "Sains", "Nasional, Yogyakarta-Online", "Medali Perak"],
+          [2, "7-8 November 2026", `${s2!.fullName}, ${s3!.fullName}`, s2!.className, "LOMBA CERDAS CERMAT CONTOH", "Dinas Pendidikan Contoh", "Cerdas Cermat", "Kota Bandung", "Juara 1 Kategori Umum"],
+          [3, "Oktober", s4!.fullName, s4!.className, "KEJUARAAN RENANG CONTOH", "Klub Renang Contoh", "Swimming, 25 meter gaya bebas", "Jawa Barat", "Medali Partisipasi"],
+          [4, "1 November 2026", "Nama Panggilan", "5B", "FESTIVAL TARI CONTOH", "Sanggar Contoh", "Tari", "Kecamatan", "Juara Harapan 2"],
+        ],
+      },
+      { name: "Laporan", rows: [["No", "NAMA SISWA", "Bidang", "Hasil"], [1, s1!.fullName, "Sains", "Medali Perak"]] },
     ]),
   });
 

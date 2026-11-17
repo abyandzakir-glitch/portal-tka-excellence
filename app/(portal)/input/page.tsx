@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ClipboardList, FileSpreadsheet, History, ListChecks, NotebookPen } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, History, ListChecks, NotebookPen, Trophy } from "lucide-react";
 import { EmptyState, PageHeader, TableSkeleton } from "@/components/layout/page";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { queryAsUser, requireUser } from "@/lib/auth/session";
@@ -24,6 +24,12 @@ const CARDS = [
     title: "Latihan Pekanan",
     icon: NotebookPen,
     desc: "Jumlah soal yang dikerjakan dan dijawab benar per siswa, per pekan, per mapel.",
+  },
+  {
+    href: "/input/unggah/prestasi",
+    title: "Prestasi",
+    icon: Trophy,
+    desc: "Rekap prestasi siswa: template standar atau rekap sekolah sendiri. Unggah ulang tidak membuat data ganda.",
   },
   {
     href: "/input/unggah/kisi",
@@ -55,7 +61,7 @@ async function InputContent() {
     <div className="space-y-8">
       <section aria-labelledby="unggah-baru" className="space-y-3">
         <h2 id="unggah-baru" className="text-lg font-semibold">Unggah data baru</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {CARDS.map((c) => (
             <Link
               key={c.href}

@@ -23,7 +23,7 @@ export interface ActionState {
 }
 
 const WRITERS = ["super_admin", "school_admin"] as const;
-const KIND_BY_SLUG = { kisi: "tryout_blueprint", hasil: "tryout_results", latihan: "practice_logs" } as const satisfies Record<
+const KIND_BY_SLUG = { kisi: "tryout_blueprint", hasil: "tryout_results", latihan: "practice_logs", prestasi: "achievements" } as const satisfies Record<
   string,
   TkaImportKind
 >;
@@ -43,6 +43,7 @@ const startSchema = z.discriminatedUnion("jenis", [
   }),
   z.object({ jenis: z.literal("hasil"), to: uuid, sekolah: optionalUuid }),
   z.object({ jenis: z.literal("latihan"), sekolah: optionalUuid, pekan: z.string().optional() }),
+  z.object({ jenis: z.literal("prestasi"), sekolah: optionalUuid }),
 ]);
 
 function safeFilename(name: string) {
@@ -112,6 +113,9 @@ export async function startImport(_prev: ActionState, formData: FormData): Promi
           } satisfies BatchOptions,
         };
       }
+
+      // Achievements: Super Admin may upload a network-wide file whose rows name their school.
+      if (input.jenis === "prestasi") return { schoolId: ownSchool ?? input.sekolah ?? null, options: {} satisfies BatchOptions };
 
       const schoolId = ownSchool ?? input.sekolah;
       if (!schoolId) throw new ImportError("Pilih sekolah.");

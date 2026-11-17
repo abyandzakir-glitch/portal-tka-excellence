@@ -17,7 +17,9 @@ import type { PracticeRow } from "@/lib/import/tka/practice";
 import { itemKey, type ResultRow } from "@/lib/import/tka/results";
 import type { Issue, RowStatus } from "@/lib/import/types";
 import { cellToString } from "@/lib/import/values";
-import { getBatch, listBatchRows, listSubjects } from "@/lib/queries/imports";
+import { CATEGORIES, CATEGORY_LABEL, LEVEL_LABEL, LEVELS, RANK_LABEL, RANKS } from "@/lib/achievements/labels";
+import type { AchievementRow } from "@/lib/import/achievements/validate";
+import { getBatch, listBatchRows, listSchools, listSubjects } from "@/lib/queries/imports";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BatchStatusBadge, formatDateTime } from "../../status";
 import { BatchActions } from "./batch-actions";
@@ -54,7 +56,8 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
     const comps = await loadCompetencies(tx, subjectList.map((s) => s.id));
     const config = found.batch.mappingJson as BatchConfig;
     const items = config.kind === "tryout_results" && config.options.tryoutId ? await loadTryoutItems(tx, config.options.tryoutId) : [];
-    return { found, rows, subjectList, comps, items };
+    const schoolList = await listSchools(tx);
+    return { found, rows, subjectList, comps, items, schoolList };
   });
   if (!data) notFound();
 
@@ -93,7 +96,9 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
     tryout_blueprint: ["No", "Sub-kompetensi", "Level Kognitif", "Kesulitan", "Kunci", "Dianulir"],
     tryout_results: ["NIS", "Nama", "Kehadiran", "Nilai", "Soal dijawab"],
     practice_logs: ["NIS", "Nama", "Pekan", "Mapel", "Sub-kompetensi", "Dikerjakan", "Benar"],
+    achievements: ["Tanggal", "Sekolah", "Peserta", "Nama Lomba", "Kategori", "Tingkat", "Peringkat", "Catatan"],
   };
+  const schoolCode = new Map(data.schoolList.map((s) => [s.id, s.code]));
   const previewRows: PreviewRow[] = data.rows.map((r) => {
     const values = (r.rawJson ?? {}) as Record<string, Cell>;
     let cells: string[];
@@ -113,6 +118,22 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
             d.hasItemDetail ? `${d.responses.filter((x) => x.answer != null).length} dari ${d.responses.length}` : "Nilai total",
           ]
         : [raw(values, "nis") || raw(values, "nisn"), raw(values, "name"), raw(values, "attendance"), raw(values, "total_score"), "–"];
+    } else if (config.kind === "achievements") {
+      const d = r.normalizedJson as AchievementRow | null;
+      cells = d
+        ? [
+            formatDate(d.achievedOn),
+            schoolCode.get(d.schoolId) ?? "–",
+            d.participants.length
+              ? d.participants.map((p) => `${p.rawName}${p.studentId ? "" : " (belum cocok)"}`).join(", ")
+              : "(tanpa nama)",
+            d.competitionName,
+            d.category ? CATEGORY_LABEL[d.category] : "–",
+            d.level ? LEVEL_LABEL[d.level] : "–",
+            d.rank ? RANK_LABEL[d.rank] : "–",
+            d.notes ?? "",
+          ]
+        : [raw(values, "date"), raw(values, "school"), raw(values, "participants"), raw(values, "competition") || raw(values, "field"), raw(values, "category"), raw(values, "level"), raw(values, "rank"), raw(values, "notes")];
     } else {
       const d = r.normalizedJson as PracticeRow | null;
       cells = d
@@ -138,10 +159,28 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
       values: Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v == null ? "" : String(v)])),
     };
   });
-  const editableFields = config.columns
-    .filter((c): c is string => Boolean(c))
-    .filter((c) => !c.startsWith("item:"))
-    .map((key) => ({ key, label: fieldLabel(set, key) }));
+  // Achievements: every canonical field is editable (e.g. set a Kategori the file never had),
+  // with dropdowns for the fixed enums. Other kinds: the mapped columns.
+  const editableFields =
+    config.kind === "achievements"
+      ? set.fields.map((f) => ({
+          key: f.key,
+          label: f.label,
+          options:
+            f.key === "category"
+              ? CATEGORIES.map((v) => ({ value: v, label: CATEGORY_LABEL[v] }))
+              : f.key === "level"
+                ? LEVELS.map((v) => ({ value: v, label: LEVEL_LABEL[v] }))
+                : f.key === "rank"
+                  ? RANKS.map((v) => ({ value: v, label: RANK_LABEL[v] }))
+                  : f.key === "school"
+                    ? data.schoolList.map((s) => ({ value: s.code, label: s.name }))
+                    : undefined,
+        }))
+      : config.columns
+          .filter((c): c is string => Boolean(c))
+          .filter((c) => !c.startsWith("item:"))
+          .map((key) => ({ key, label: fieldLabel(set, key) }));
 
   // ---- Original file link -----------------------------------------------------
   let fileUrl: string | null = null;

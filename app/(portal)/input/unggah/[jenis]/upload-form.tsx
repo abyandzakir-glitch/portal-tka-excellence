@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { startImport, type ActionState } from "../../actions";
 
-export type UploadKind = "hasil" | "latihan" | "kisi";
+export type UploadKind = "hasil" | "latihan" | "kisi" | "prestasi";
 
 interface SchoolOption {
   id: string;
@@ -96,6 +96,9 @@ export function UploadForm(props: {
   } else if (kind === "latihan" && school) {
     templateHref = `/input/template/latihan?sekolah=${school.id}&pekan=${week || props.currentWeek}`;
     templateLabel = `Unduh template latihan pekanan ${school.code}`;
+  } else if (kind === "prestasi") {
+    templateHref = `/input/template/prestasi${school ? `?sekolah=${school.id}` : ""}`;
+    templateLabel = `Unduh template standar prestasi${school ? ` (${school.code})` : ""}`;
   } else if (kind === "kisi") {
     const sid = mode === "baru" ? subject?.id : undefined;
     const fromTryout = mode === "ubah" && chosenTryout ? props.subjects.find((s) => s.name === chosenTryout.subjectName && s.level === chosenTryout.level) : undefined;
@@ -127,9 +130,9 @@ export function UploadForm(props: {
                   setSchoolId(e.target.value);
                   setTryoutId("");
                 }}
-                required
+                required={kind !== "prestasi"}
               >
-                <option value="">Pilih sekolah…</option>
+                <option value="">{kind === "prestasi" ? "Semua sekolah — baca kolom Sekolah di file" : "Pilih sekolah…"}</option>
                 {props.schools.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}

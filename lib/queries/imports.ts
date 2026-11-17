@@ -89,7 +89,7 @@ export function listRecentBatches(tx: RlsTx, limit = 30) {
     .leftJoin(schools, eq(schools.id, importBatches.schoolId))
     .leftJoin(tryouts, eq(tryouts.id, importBatches.tryoutId))
     .leftJoin(uploader, eq(uploader.id, importBatches.createdBy))
-    .where(inArray(importBatches.type, ["tryout_blueprint", "tryout_results", "practice_logs"]))
+    .where(inArray(importBatches.type, ["tryout_blueprint", "tryout_results", "practice_logs", "achievements"]))
     .orderBy(desc(importBatches.createdAt))
     .limit(limit);
 }

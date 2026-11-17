@@ -2,6 +2,7 @@
  * Glue between the generic import steps and the per-type validators. Pure:
  * the server layer loads master data into the contexts and persists results.
  */
+import { ACHIEVEMENT_FIELDS } from "./achievements/validate";
 import { applyMapping, autoMap, dataRows, detectHeaderRow, headersAt, type ColumnMapping, type FieldSet } from "./mapping";
 import type { Cell, SheetData } from "./sheet";
 import { BLUEPRINT_FIELDS } from "./tka/blueprint";
@@ -9,10 +10,12 @@ import { PRACTICE_FIELDS } from "./tka/practice";
 import { RESULTS_FIELDS } from "./tka/results";
 import type { RowInput } from "./types";
 
-export const TKA_IMPORT_KINDS = ["tryout_blueprint", "tryout_results", "practice_logs"] as const;
-export type TkaImportKind = (typeof TKA_IMPORT_KINDS)[number];
+export const IMPORT_KINDS = ["tryout_blueprint", "tryout_results", "practice_logs", "achievements"] as const;
+export type ImportKind = (typeof IMPORT_KINDS)[number];
+/** @deprecated kept for existing imports; every kind is supported now. */
+export type TkaImportKind = ImportKind;
 
-export const IMPORT_KIND_LABEL: Record<TkaImportKind | "achievements", string> = {
+export const IMPORT_KIND_LABEL: Record<ImportKind, string> = {
   tryout_blueprint: "Kisi-kisi TO",
   tryout_results: "Hasil TO",
   practice_logs: "Latihan Pekanan",
@@ -27,6 +30,8 @@ export function fieldSetFor(kind: TkaImportKind): FieldSet {
       return RESULTS_FIELDS;
     case "practice_logs":
       return PRACTICE_FIELDS;
+    case "achievements":
+      return ACHIEVEMENT_FIELDS;
   }
 }
 

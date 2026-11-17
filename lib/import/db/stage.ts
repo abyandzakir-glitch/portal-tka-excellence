@@ -6,7 +6,8 @@
  */
 import { eq } from "drizzle-orm";
 import type { RlsTx } from "@/lib/db/rls";
-import { importBatches, importRows, schools, tryouts } from "@/lib/db/schema";
+import { academicYears, importBatches, importRows, schools, tryouts } from "@/lib/db/schema";
+import { validateAchievements } from "../achievements/validate";
 import { todayIso } from "@/lib/format/id";
 import { buildRowInputs } from "../pipeline";
 import { validateBlueprint } from "../tka/blueprint";
@@ -14,7 +15,7 @@ import { validatePractice } from "../tka/practice";
 import { validateResults } from "../tka/results";
 import { summarize, type RowInput, type ValidationResult } from "../types";
 import { editsMap, ImportError, type BatchConfig, type BatchSource } from "./config";
-import { cognitiveLevelsFor, loadCompetencies, loadPracticeKeys, loadRoster, loadSubjects, loadTryoutItems } from "./context";
+import { cognitiveLevelsFor, loadAchievementKeys, loadCompetencies, loadPracticeKeys, loadRoster, loadSubjects, loadTryoutItems } from "./context";
 
 export type ImportBatchRow = typeof importBatches.$inferSelect;
 
@@ -78,6 +79,25 @@ async function validate(tx: RlsTx, batch: ImportBatchRow, config: BatchConfig, i
         competenciesBySubject: comps,
         defaultWeek: config.options.defaultWeek ?? null,
         today: todayIso(),
+        existingKeys,
+      });
+    }
+    case "achievements": {
+      const schoolRows = await tx.select({ id: schools.id, code: schools.schoolCode, name: schools.name }).from(schools);
+      // Network-wide file (Super Admin, no school chosen): rows name their school.
+      const scope = batch.schoolId ? [batch.schoolId] : schoolRows.map((s) => s.id);
+      const [rosters, existingKeys, year] = await Promise.all([
+        Promise.all(scope.map(async (id) => [id, await loadRoster(tx, id)] as const)).then((e) => new Map(e)),
+        loadAchievementKeys(tx, scope),
+        tx.select({ start: academicYears.startDate }).from(academicYears).where(eq(academicYears.isActive, true)).limit(1),
+      ]);
+      const today = todayIso();
+      return validateAchievements(inputs, {
+        schools: schoolRows,
+        batchSchoolId: batch.schoolId,
+        rosters,
+        academicYear: { startYear: Number((year[0]?.start ?? today).slice(0, 4)) },
+        today,
         existingKeys,
       });
     }

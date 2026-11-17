@@ -17,6 +17,8 @@ import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { RlsTx } from "@/lib/db/rls";
 import {
   academicYears,
+  achievementParticipants,
+  achievements,
   importBatches,
   importRows,
   itemResponses,
@@ -27,6 +29,7 @@ import {
   tryouts,
   tryoutScores,
 } from "@/lib/db/schema";
+import type { AchievementRow } from "../achievements/validate";
 import { headerSignature } from "../mapping";
 import type { BlueprintItem } from "../tka/blueprint";
 import type { PracticeRow } from "../tka/practice";
@@ -259,6 +262,40 @@ async function commitPractice(tx: RlsTx, batch: ImportBatchRow): Promise<{ saved
 }
 
 /**
+ * Achievements never replace stored rows (already-stored ones are skipped at
+ * staging), so nothing needs a snapshot: rollback simply deletes the batch's
+ * achievements (participants cascade).
+ */
+async function commitAchievements(tx: RlsTx, batch: ImportBatchRow, userId: string): Promise<{ saved: number }> {
+  const rows = await savableRows<AchievementRow>(tx, batch.id);
+  for (const chunk of Array.from({ length: Math.ceil(rows.length / 500) }, (_, i) => rows.slice(i * 500, i * 500 + 500))) {
+    const inserted = await tx
+      .insert(achievements)
+      .values(
+        chunk.map((r) => ({
+          schoolId: r.schoolId,
+          achievedOn: r.achievedOn,
+          competitionName: r.competitionName,
+          organizer: r.organizer,
+          category: r.category,
+          level: r.level,
+          rank: r.rank,
+          evidenceUrl: r.evidenceUrl,
+          notes: r.notes,
+          importBatchId: batch.id,
+          createdBy: userId,
+        })),
+      )
+      .returning({ id: achievements.id });
+    const participants = chunk.flatMap((r, i) =>
+      r.participants.map((p) => ({ achievementId: inserted[i]!.id, schoolId: r.schoolId, studentId: p.studentId, rawName: p.rawName })),
+    );
+    if (participants.length) await tx.insert(achievementParticipants).values(participants);
+  }
+  return { saved: rows.length };
+}
+
+/**
  * Validates once more against current master data, then writes the batch.
  * Runs entirely inside the caller's (RLS) transaction: all or nothing.
  */
@@ -282,6 +319,9 @@ export async function commitBatch(tx: RlsTx, batchId: string, userId: string): P
       break;
     case "practice_logs":
       ({ saved } = await commitPractice(tx, batch));
+      break;
+    case "achievements":
+      ({ saved } = await commitAchievements(tx, batch, userId));
       break;
   }
 
@@ -357,6 +397,10 @@ export async function rollbackBatch(tx: RlsTx, batchId: string, userId: string):
            where t.id = s.id`);
         await rescoreTryout(tx, batch.tryoutId);
       }
+      break;
+    }
+    case "achievements": {
+      await tx.delete(achievements).where(eq(achievements.importBatchId, batchId));
       break;
     }
     default:

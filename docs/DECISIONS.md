@@ -100,6 +100,22 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 - **Grafik**: keterangan target ada di legenda (garis putus abu-abu), bukan label di area plot, agar tidak bertabrakan dengan label ujung seri. Label ujung hanya untuk 2–4 seri. Sumbu jumlah selalu mulai dari 0.
 - **Uji E2E dashboard** (`e2e/tka.spec.ts`): hanya membaca; mencakup ringkasan, telusur heatmap, dashboard sekolah (termasuk penolakan sekolah lain), profil siswa, kelompok intervensi (unduh Excel/PDF), perbandingan TO, dan Pengaturan.
 
+## 2026-11-17 — Fase 4 (disetujui)
+
+Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, hanya strukturnya; file tidak disalin, tidak di-commit, tidak dikirim ke layanan apa pun). Data uji memakai tiruan anonim.
+
+- **[Disetujui]** **Tingkat tidak baku** (Kecamatan, Bandung Raya, Wilayah Bantim, dll.) → tingkat kosong, nilai asli di Catatan, baris *Perlu dicek*. Nama provinsi → PROVINSI; "Kota/Kabupaten X" → KOTA_KABUPATEN. Lokasi tambahan ("Nasional, Yogyakarta-Online") disimpan di Catatan.
+- **[Disetujui]** **Peringkat tidak baku**: bila memuat peringkat baku yang jelas, peringkat itu dipakai dan teks asli disimpan di Catatan (*Juara 1 Kategori Champion* → JUARA_1, *Gold Medal* → MEDALI_EMAS, *Juara Harapan 3* → HARAPAN). Bila tidak (*Medali Partisipasi*, *Piagam Peserta Aktif*, *Honorable Mention*, *Terbaik*, *Semifinal*) → peringkat kosong, teks asli di Catatan, *Perlu dicek*.
+- **[Disetujui]** **Baris tanpa nama siswa** boleh disimpan (*Perlu dicek*); dihitung di total prestasi, tidak di jumlah siswa berprestasi sampai nama dilengkapi.
+- **[Disetujui]** **Tanggal tidak lengkap**: rentang → tanggal awal; bulan saja → tanggal 1; tahun hilang → dari tahun ajaran terpilih; tanggal asli dicatat sebagai "tanggal perkiraan" di Catatan. Tanggal kosong → *Bermasalah*.
+- **[Disetujui]** **Akademik vs Non-Akademik** ditampilkan sebagai satu batang tersegmentasi berlabel angka dan persen (bukan donat 2 bagian, yang sulit dibandingkan).
+
+### Fase 4 — keputusan kecil (diambil sendiri)
+- **Rekap kumulatif**: sekolah cenderung mengunggah ulang file yang sama berisi semua prestasi sejak awal tahun. Baris yang sama persis dengan prestasi yang sudah tersimpan (sekolah + tanggal + nama lomba + peserta) otomatis **dilewati** dengan keterangan "sudah tersimpan", sehingga unggah ulang hanya menambah baris baru. Duplikat **di dalam satu file** tetap *Bermasalah*.
+- **Kategori disimpulkan** dari bidang/jenis dan nama lomba dengan kamus kata kunci (renang → Olahraga, tari → Seni Budaya, robotik → Teknologi, olimpiade/sains → Akademik, tahfidz → Non-Akademik). Tidak dikenali → kosong + *Perlu dicek*. Kolom Kategori di file selalu diutamakan.
+- **Nama lomba kosong** (pola file yang hanya punya bidang) → bidang dipakai sebagai nama lomba, dengan peringatan.
+- **Template standar** belum ada dari yayasan; dibuat dari CLAUDE.md §8.1 dan disimpan di `docs/templates/` untuk ditinjau.
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.

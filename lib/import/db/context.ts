@@ -7,6 +7,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { RlsTx } from "@/lib/db/rls";
 import { academicYears, classEnrollments, classes, competencies, practiceLogs, students, subjects, tryoutItems } from "@/lib/db/schema";
 import { COGNITIVE_LEVELS } from "@/lib/tka/cognitive-levels";
+import { dedupKey, fieldFromNotes } from "../achievements/validate";
 import { Roster, type CompetencyRef, type SubjectRef } from "../lookup";
 import { practiceKey } from "../tka/practice";
 import type { ResultsItem } from "../tka/results";
@@ -75,6 +76,24 @@ export async function loadTryoutItems(tx: RlsTx, tryoutId: string): Promise<Resu
     .from(tryoutItems)
     .where(eq(tryoutItems.tryoutId, tryoutId))
     .orderBy(asc(tryoutItems.number));
+}
+
+/**
+ * Duplicate keys of achievements already stored for the given schools, so a
+ * re-uploaded cumulative recap only adds new rows (DECISIONS.md Fase 4).
+ */
+export async function loadAchievementKeys(tx: RlsTx, schoolIds: readonly string[]): Promise<Set<string>> {
+  if (!schoolIds.length) return new Set();
+  const rows = await tx.execute<{ school_id: string; achieved_on: string; competition_name: string; notes: string | null; names: string[] | null }>(sql`
+    select a.school_id, a.achieved_on::text, a.competition_name, a.notes,
+           (select array_agg(p.raw_name) from public.achievement_participants p where p.achievement_id = a.id) as names
+      from public.achievements a
+     where a.school_id in (${sql.join(schoolIds.map((id) => sql`${id}`), sql`, `)})`);
+  return new Set(
+    rows.map((r) =>
+      dedupKey({ schoolId: r.school_id, achievedOn: r.achieved_on, competitionName: r.competition_name, field: fieldFromNotes(r.notes), names: r.names ?? [] }),
+    ),
+  );
 }
 
 /** Keys of practice logs already stored for a school (to warn before replacing them). */

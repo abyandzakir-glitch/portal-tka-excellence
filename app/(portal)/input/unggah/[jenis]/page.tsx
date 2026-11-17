@@ -17,13 +17,17 @@ const TITLES: Record<UploadKind, { title: string; description: string }> = {
     title: "Unggah Latihan Pekanan",
     description: "Rekap jumlah soal latihan yang dikerjakan dan dijawab benar per siswa. Satu file boleh berisi beberapa pekan.",
   },
+  prestasi: {
+    title: "Unggah Prestasi",
+    description: "Rekap prestasi siswa dalam format apa pun: template standar, atau rekap sekolah sendiri. Sistem mencocokkan kolom, menormalkan tingkat dan peringkat, lalu menampilkan pratinjau. Prestasi yang sudah tersimpan otomatis dilewati.",
+  },
   kisi: {
     title: "Unggah Kisi-kisi Try Out",
     description: "Petakan setiap nomor soal ke sub-kompetensi. Kisi-kisi ini menjadi dasar analisis penguasaan kompetensi siswa.",
   },
 };
 
-/** Only three upload kinds exist: their page shells are prerendered. */
+/** A fixed set of upload kinds: their page shells are prerendered. */
 export function generateStaticParams() {
   return Object.keys(TITLES).map((jenis) => ({ jenis }));
 }

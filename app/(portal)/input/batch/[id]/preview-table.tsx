@@ -22,6 +22,13 @@ export interface PreviewRow {
 
 type Filter = "all" | "problems" | "error" | "ok";
 
+export interface EditableField {
+  key: string;
+  label: string;
+  /** Fixed choices (enums): rendered as a dropdown. */
+  options?: { value: string; label: string }[];
+}
+
 const STATUS: Record<RowStatus, { label: string; icon: typeof CheckCircle2; className: string; row: string }> = {
   ok: { label: "Siap", icon: CheckCircle2, className: "text-status-cakap", row: "" },
   warning: { label: "Perlu dicek", icon: AlertTriangle, className: "text-status-berkembang", row: "bg-status-berkembang-tint/60" },
@@ -36,7 +43,7 @@ export function PreviewTable(props: {
   editable: boolean;
   columns: string[];
   rows: PreviewRow[];
-  editableFields: { key: string; label: string }[];
+  editableFields: EditableField[];
   defaultFilter: Filter;
 }) {
   const [filter, setFilter] = useState<Filter>(props.defaultFilter);
@@ -131,7 +138,7 @@ export function PreviewTable(props: {
                     </td>
                     {props.editable ? (
                       <td className="px-3 py-2">
-                        {r.status !== "ok" && props.editableFields.length ? (
+                        {props.editableFields.length ? (
                           <Button type="button" variant="outline" size="sm" onClick={() => setEditing(r)} aria-label={`Ubah baris ${r.rowNumber}`}>
                             <Pencil aria-hidden="true" />
                             Ubah
@@ -168,7 +175,7 @@ export function PreviewTable(props: {
 function EditRowDialog(props: {
   batchId: string;
   row: PreviewRow;
-  fields: { key: string; label: string }[];
+  fields: EditableField[];
   onClose: () => void;
 }) {
   const [values, setValues] = useState<Record<string, string>>(() =>
@@ -225,13 +232,30 @@ function EditRowDialog(props: {
               <Label htmlFor={`edit-${f.key}`} className={problemFields.has(f.key) ? "text-status-intervensi" : undefined}>
                 {f.label}
               </Label>
-              <Input
-                id={`edit-${f.key}`}
-                value={values[f.key] ?? ""}
-                onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                aria-invalid={problemFields.has(f.key) || undefined}
-                className="h-9"
-              />
+              {f.options ? (
+                <select
+                  id={`edit-${f.key}`}
+                  value={values[f.key] ?? ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                  aria-invalid={problemFields.has(f.key) || undefined}
+                  className="h-9 w-full rounded-lg border border-input bg-white px-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-sky"
+                >
+                  <option value="">— Kosong —</option>
+                  {/* Keep a non-standard value from the file visible so the user sees what they are replacing. */}
+                  {values[f.key] && !f.options.some((o) => o.value === values[f.key]) ? <option value={values[f.key]}>{values[f.key]} (dari file)</option> : null}
+                  {f.options.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  id={`edit-${f.key}`}
+                  value={values[f.key] ?? ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                  aria-invalid={problemFields.has(f.key) || undefined}
+                  className="h-9"
+                />
+              )}
             </div>
           ))}
           <DialogFooter>

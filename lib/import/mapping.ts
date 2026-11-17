@@ -33,7 +33,8 @@ export interface FieldSet {
 export type ColumnMapping = (string | null)[];
 
 const MIN_SCORE = 0.7;
-const HEADER_SCAN_ROWS = 25;
+/** Deep enough for recaps that put summary tables above the detail table (seen: header on row 35). */
+const HEADER_SCAN_ROWS = 60;
 
 function matchScore(header: string, synonym: string): number {
   const h = normalizeText(header);
