@@ -2,7 +2,7 @@
 
 Panduan ini menjelaskan cara memasukkan data TKA sekolah Anda ke Portal Academic Excellence setiap pekan. Anda tidak perlu keahlian teknis: cukup file Excel atau CSV.
 
-Untuk **prestasi**, lihat bagian [Prestasi](#prestasi) di bawah.
+Untuk **prestasi**, lihat bagian [Prestasi](#prestasi). Untuk **data siswa dan kelas**, lihat [Data siswa dan kelas](#data-siswa-dan-kelas). Tugas khusus **Super Admin** ada di [bagian akhir](#khusus-super-admin-yayasan).
 
 ---
 
@@ -15,6 +15,17 @@ Untuk **prestasi**, lihat bagian [Prestasi](#prestasi) di bawah.
 | **Latihan Pekanan** | Setiap pekan | Admin sekolah |
 
 Semua dilakukan di menu **Input Pekanan**.
+
+### Status pekan ini
+Bagian atas halaman **Input Pekanan** menampilkan kartu sekolah Anda untuk pekan berjalan (Senin–Minggu):
+
+| Status | Arti |
+|---|---|
+| **Lengkap** | Latihan pekanan semua siswa kelas 6 (SD) / kelas 9 (SMP) sudah masuk, dan hasil TO yang dilaksanakan pekan ini atau pekan lalu sudah diunggah lengkap per butir soal. |
+| **Sebagian** | Sebagian sudah masuk. Kartu menunjukkan yang kurang, misalnya "58 dari 60 siswa punya catatan latihan" atau "nilai total saja". |
+| **Belum** | Belum ada data pekan ini. |
+
+Prestasi hanya ditampilkan sebagai informasi (pekan tanpa lomba itu wajar) dan tidak memengaruhi status. Manajemen yayasan melihat kartu kelima sekolah, jadi usahakan status **Lengkap** sebelum akhir pekan. Gunakan **← Pekan sebelumnya** untuk melihat pekan lalu.
 
 ---
 
@@ -123,10 +134,68 @@ Kalau Super Admin sudah mengaktifkan fitur AI di Pengaturan, Anda juga bisa meng
 
 ---
 
+## Data siswa dan kelas
+
+Menu **Master Data → Siswa** dan **Master Data → Kelas**. Admin sekolah mengelola siswa dan kelas sekolahnya sendiri.
+
+### Impor data siswa (awal tahun ajaran atau siswa baru)
+1. Buka **Master Data → Siswa**, klik **Impor data siswa dari Excel**.
+2. Unduh template (sudah berisi siswa sekolah Anda), lalu tambahkan atau ubah barisnya. Kolom wajib: **NIS** dan **Nama Lengkap**. Kolom **Kelas** ditulis seperti `6A`, `VI-B`, atau `Kelas 9 C`.
+3. Unggah, periksa pratinjau, lalu **Simpan**. Pratinjau memberi tahu berapa siswa yang **baru** dan berapa yang **diperbarui** (misalnya pindah kelas).
+
+Hal penting:
+- Siswa dicocokkan berdasarkan **NIS**. NIS yang sudah ada = data diperbarui; NIS baru = siswa baru.
+- Kelas yang belum ada di tahun ajaran aktif **dibuat otomatis**.
+- Siswa yang **tidak ada** di file **tidak** diubah dan tidak dinonaktifkan. Untuk siswa pindah/lulus, gunakan tombol **Nonaktifkan** (di bawah).
+
+### Mengubah satu siswa
+Di daftar siswa, klik **Ubah** pada baris siswa. Anda bisa mengubah nama, NISN, jenis kelamin, dan kelas pada tahun ajaran aktif. NIS tidak bisa diubah dari sini karena dipakai untuk mencocokkan data unggahan; hubungi Super Admin bila NIS salah.
+
+**Nonaktifkan** siswa yang pindah atau lulus. Nilai dan prestasinya tetap tersimpan, tetapi siswa tidak lagi dihitung di dashboard. Siswa bisa diaktifkan kembali kapan saja.
+
+### Menambah kelas
+Di **Master Data → Kelas**, isi nama kelas (mis. `6C`) lalu klik **Tambah kelas**. Kelas dibuat untuk tahun ajaran aktif.
+
+---
+
+## Khusus Super Admin (yayasan)
+
+### Mengundang pengguna
+Menu **Pengguna** → isi nama, email, dan peran → **Kirim undangan**. Pengguna menerima email berisi tautan untuk membuat kata sandi (berlaku 24 jam).
+
+| Peran | Bisa apa |
+|---|---|
+| **Manajemen** | Melihat semua dashboard kelima sekolah, mengunduh laporan. Tidak bisa mengubah data. |
+| **Admin Sekolah** | Mengunggah dan mengubah data **sekolahnya sendiri** saja. Wajib dipilihkan sekolahnya. |
+| **Super Admin** | Semua akses, termasuk Pengaturan, Pengguna, dan Audit Log. |
+
+Klik **Kelola** pada baris pengguna untuk mengubah peran/sekolah, **mengirim ulang undangan** (bila belum diterima atau kedaluwarsa), mengirim **tautan atur ulang kata sandi**, atau **menonaktifkan** akun. Akun nonaktif tidak bisa masuk; riwayat unggahannya tetap tersimpan. Anda tidak bisa menonaktifkan atau menurunkan peran akun Anda sendiri.
+
+> Email undangan dikirim lewat layanan email Supabase yang dibatasi beberapa email per jam. Bila muncul pesan "batas pengiriman email tercapai", tunggu sekitar satu jam atau minta tim teknis memasang SMTP sendiri.
+
+### Tahun ajaran baru
+1. **Master Data → Tahun Ajaran** → isi mis. `2027/2028` → **Tambah**.
+2. Saat tahun ajaran dimulai, klik **Jadikan aktif**.
+3. Minta setiap admin sekolah **mengimpor data siswa** dengan kelas barunya. Kelas otomatis dibuat; data tahun lalu tetap tersimpan.
+
+### Kompetensi
+**Master Data → Kompetensi**: ubah nama sub-kompetensi atau tambah sub-kompetensi baru di sebuah elemen. Kodenya dibuat otomatis. Sub-kompetensi baru langsung muncul di dropdown template kisi-kisi TO.
+
+### Pengaturan
+Ambang status penguasaan, bobot TO vs latihan, target nilai per mapel (dan per sekolah bila perlu), aturan siswa berisiko, bobot **Poin Prestasi**, kategori yang dihitung **Akademik**, dan saklar **Ekstraksi AI**. Semua perubahan langsung berlaku dan tercatat di Audit Log.
+
+### Laporan Manajemen
+Menu **Laporan Manajemen** → pilih tahun ajaran dan periode → **Unduh PDF**. Isinya: ringkasan TKA per mapel, nilai TO terakhir per sekolah, lima kompetensi terlemah, rekap prestasi, dan status kelengkapan input pekan berjalan. Dokumen ini berisi nama siswa: bagikan hanya kepada pihak berwenang.
+
+### Audit Log
+Menu **Audit Log** mencatat setiap penambahan, perubahan, penghapusan, dan impor: siapa, kapan, dan apa yang berubah. Saring berdasarkan jenis data, aksi, pengguna, sekolah, atau tanggal, lalu klik **Lihat sebelum/sesudah** untuk rinciannya. Isi file unggahan tidak ditampilkan.
+
+---
+
 ## Pertanyaan yang sering muncul
 
 **"NIS … tidak ditemukan di data siswa sekolah ini."**
-Siswa tersebut belum ada di data master, atau NIS-nya salah ketik. Periksa saran nama yang muncul di keterangan. Kalau siswa memang baru, minta Super Admin menambahkannya ke data master, lalu unggah ulang.
+Siswa tersebut belum ada di data master, atau NIS-nya salah ketik. Periksa saran nama yang muncul di keterangan. Kalau siswa memang baru, tambahkan dulu lewat **Master Data → Siswa → Impor data siswa** (lihat [Data siswa dan kelas](#data-siswa-dan-kelas)), lalu unggah ulang.
 
 **"Ada 2 siswa bernama …"**
 Isi kolom NIS supaya portal tahu siswa yang dimaksud.

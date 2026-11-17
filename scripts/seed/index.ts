@@ -4,6 +4,8 @@
  *
  *   pnpm db:seed            # refuses to run if data already exists
  *   pnpm db:seed --reset    # wipes ALL portal data first (asks nothing!)
+ *   pnpm db:seed --production  # master data only (schools, years, subjects, competencies, settings);
+ *                              # no dummy students/scores/accounts. Empty database only, never resets.
  *
  * Deterministic: the same seed produces the same data, so dashboard numbers can
  * be checked against manual calculations in Fase 3.
@@ -88,7 +90,13 @@ async function chunkedInsert<T>(rows: T[], size: number, insert: (chunk: T[]) =>
 }
 
 async function main() {
+  const production = process.argv.includes("--production");
   const reset = process.argv.includes("--reset");
+  if (production && reset) {
+    console.error("✗ --production tidak bisa digabung dengan --reset (data produksi tidak pernah dihapus oleh seed).");
+    process.exitCode = 1;
+    return;
+  }
   const direct = env("DATABASE_URL_DIRECT", false);
   const url = direct ?? env("DATABASE_URL")!;
   const client = postgres(url, {
@@ -113,8 +121,11 @@ async function main() {
       return;
     }
 
-    const users =
-      process.env.SEED_AUTH_MODE === "local" ? await prepareLocalAuthUsers(client) : await prepareAuthUsers();
+    const users = production
+      ? []
+      : process.env.SEED_AUTH_MODE === "local"
+        ? await prepareLocalAuthUsers(client)
+        : await prepareAuthUsers();
 
     await db.transaction(async (tx) => {
       if (reset) {
@@ -189,6 +200,8 @@ async function main() {
       const totalSubs = [...subsBySubject.values()].reduce((a, b) => a + b.length, 0);
       console.log(`✓ ${subjectRows.length} mapel, ${totalSubs} sub-kompetensi`);
 
+      // Everything from here to the settings is dummy data: skipped in production mode.
+      if (!production) {
       // --- Classes & students --------------------------------------------------
       interface SimStudent {
         id: string;
@@ -410,6 +423,7 @@ async function main() {
         );
       }
       console.log(`✓ ${achievements.length} prestasi`);
+      } // end dummy data
 
       // --- Settings -----------------------------------------------------------------
       const settingRows: (typeof t.settings.$inferInsert)[] = [
@@ -432,7 +446,7 @@ async function main() {
       console.log(`✓ ${settingRows.length} pengaturan default`);
 
       // --- Profiles for demo users -------------------------------------------------
-      await tx.insert(t.profiles).values(
+      if (users.length) await tx.insert(t.profiles).values(
         users.map((u) => ({
           id: u.id,
           email: u.email,
@@ -444,6 +458,10 @@ async function main() {
       console.log(`✓ ${users.length} akun demo`);
     });
 
+    if (production) {
+      console.log("\nSelesai (mode produksi: hanya data master). Buat akun Super Admin pertama sesuai README → Deploy.");
+      return;
+    }
     console.log("\nSelesai. Akun demo (kata sandi sama untuk semua akun):");
     for (const u of users) console.log(`  ${u.role.padEnd(13)} ${u.email}`);
   } finally {

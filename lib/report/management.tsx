@@ -132,8 +132,8 @@ export async function managementPdf(r: ManagementReport, meta: { generatedAt: st
 
         <Text style={[s.h2, { marginTop: 2 }]}>1. Persiapan TKA</Text>
         <Text style={{ marginBottom: 2 }}>
-          <Text style={F.bodyBold}>{formatNumber(r.tka[0]!.kpis.needsIntervention)}</Text> dari {formatNumber(r.tka[0]!.kpis.students)} siswa berstatus Perlu Intervensi pada minimal satu kompetensi;{" "}
-          <Text style={F.bodyBold}>{formatNumber(r.tka[0]!.kpis.atRisk)}</Text> siswa berisiko (nilai di bawah target berturut-turut atau turun tajam, sesuai aturan di menu Pengaturan).
+          <Text style={F.bodyBold}>{formatNumber(r.tka[0]!.kpis.needsIntervention)}</Text> dari {formatNumber(r.tka[0]!.kpis.students)} siswa perlu intervensi (status keseluruhan Perlu Intervensi atau berisiko); di antaranya{" "}
+          <Text style={F.bodyBold}>{formatNumber(r.tka[0]!.kpis.atRisk)}</Text> siswa berisiko karena nilai TO di bawah target berturut-turut atau turun tajam (aturan di menu Pengaturan).
         </Text>
         {r.tka.map((t) => (
           <View key={t.code} wrap={false}>

@@ -41,9 +41,9 @@ const SUPABASE_STUB = `
 `;
 
 /** Runs a TypeScript script with tsx in a child Node process (no shell). */
-function runScript(script: string, env: NodeJS.ProcessEnv) {
+function runScript(script: string, env: NodeJS.ProcessEnv, args: string[] = []) {
   return new Promise<number>((resolve) => {
-    const child = spawn(process.execPath, [TSX_CLI, script], { cwd: ROOT, env, stdio: "inherit" });
+    const child = spawn(process.execPath, [TSX_CLI, script, ...args], { cwd: ROOT, env, stdio: "inherit" });
     child.on("exit", (code) => resolve(code ?? 1));
   });
 }
@@ -65,22 +65,29 @@ async function main() {
   await pg.start();
 
   const url = `postgres://postgres:${PASSWORD}@127.0.0.1:${PORT}/postgres`;
+  const prodUrl = `postgres://postgres:${PASSWORD}@127.0.0.1:${PORT}/prodcheck`;
   let code = 1;
-  try {
-    const admin = postgres(url, { max: 1, onnotice: () => {} });
+
+  /** Roles are cluster-wide, so a second database in the same instance skips creating them. */
+  async function migrate(dbUrl: string, opts: { quiet?: boolean; skipRoles?: boolean } = {}) {
+    const admin = postgres(dbUrl, { max: 1, onnotice: () => {} });
     try {
-      await admin.unsafe(SUPABASE_STUB);
+      await admin.unsafe(opts.skipRoles ? SUPABASE_STUB.replace(/create role[^;]*;/g, "") : SUPABASE_STUB);
       const journal = JSON.parse(readFileSync(join(ROOT, "drizzle/meta/_journal.json"), "utf8")) as {
         entries: { tag: string }[];
       };
       for (const { tag } of journal.entries) {
         const statements = readFileSync(join(ROOT, "drizzle", `${tag}.sql`), "utf8").split("--> statement-breakpoint");
         for (const statement of statements) if (statement.trim()) await admin.unsafe(statement);
-        console.log(`✓ migrasi ${tag}`);
+        if (!opts.quiet) console.log(`✓ migrasi ${tag}`);
       }
     } finally {
       await admin.end();
     }
+  }
+
+  try {
+    await migrate(url);
 
     const env = {
       ...process.env,
@@ -90,8 +97,28 @@ async function main() {
       SEED_DEMO_PASSWORD: "", // skip the Data API layer in the RLS test
     };
 
+    // Production mode: master data only, in a separate database.
+    console.log("\n== Seed mode produksi (hanya data master) ==");
+    {
+      const root = postgres(url, { max: 1, onnotice: () => {} });
+      await root.unsafe("create database prodcheck");
+      await root.end();
+      await migrate(prodUrl, { quiet: true, skipRoles: true });
+      code = await runScript("scripts/seed/index.ts", { ...env, DATABASE_URL: prodUrl, DATABASE_URL_DIRECT: prodUrl }, ["--production"]);
+      const db = postgres(prodUrl, { max: 1, onnotice: () => {} });
+      const [r] = await db<{ schools: number; comps: number; settings: number; students: number; profiles: number; tryouts: number; achievements: number }[]>`
+        select (select count(*)::int from public.schools) as schools, (select count(*)::int from public.competencies) as comps,
+               (select count(*)::int from public.settings) as settings, (select count(*)::int from public.students) as students,
+               (select count(*)::int from public.profiles) as profiles, (select count(*)::int from public.tryouts) as tryouts,
+               (select count(*)::int from public.achievements) as achievements`;
+      await db.end();
+      const ok = code === 0 && r!.schools === 5 && r!.comps > 0 && r!.settings > 0 && r!.students + r!.profiles + r!.tryouts + r!.achievements === 0;
+      console.log(`${ok ? "  ✓" : "  ✗"} 5 sekolah, ${r!.comps} kompetensi, ${r!.settings} pengaturan; 0 siswa/akun/TO/prestasi dummy (${r!.students}/${r!.profiles}/${r!.tryouts}/${r!.achievements})`);
+      if (!ok) code = 1;
+    }
+
     console.log("\n== Seed ==");
-    code = await runScript("scripts/seed/index.ts", env);
+    if (code === 0) code = await runScript("scripts/seed/index.ts", env);
     if (code === 0) {
       console.log("\n== Uji RLS ==");
       code = await runScript("tests/integration/rls.test.ts", env);

@@ -92,7 +92,7 @@ Kompetensi yang penguasaannya rendah **dan** sering diujikan muncul paling atas.
 | **Siswa berprestasi (unik)** | Jumlah siswa berbeda. Siswa yang cocok dengan data siswa dihitung per orang. Nama yang belum cocok dihitung per nama tertulis di sekolahnya. Prestasi tanpa nama siswa tidak ikut dihitung di sini. |
 | **Nasional & internasional** | Prestasi bertingkat Nasional atau Internasional. |
 | **Dibandingkan tahun lalu** | Angka yang sama pada tanggal-tanggal yang sama satu tahun sebelumnya. |
-| **Akademik vs Non-Akademik** | Akademik = kategori Akademik + Teknologi. Pengelompokan ini bisa diubah. Prestasi tanpa kategori ditampilkan terpisah. |
+| **Akademik vs Non-Akademik** | Akademik = kategori Akademik + Teknologi (bawaan). Pengelompokan ini bisa diubah Super Admin di menu Pengaturan. Prestasi tanpa kategori ditampilkan terpisah. |
 | **Individu / Tim** | Ditentukan dari jumlah nama: 1 nama = individu, lebih dari 1 = tim. |
 
 **Poin Prestasi** = bobot tingkat × bobot peringkat. Poin dipakai agar perbandingan antarsekolah lebih adil daripada sekadar jumlah.
@@ -106,6 +106,18 @@ Kompetensi yang penguasaannya rendah **dan** sering diujikan muncul paling atas.
 | Tidak diketahui | 1 | | Finalis | 1 |
 | | | | Tanpa peringkat baku | 0,5 |
 
-Contoh: Juara 1 tingkat Nasional = 4 × 5 = **20 poin**. Medali Partisipasi tingkat Kota = 1 × 0,5 = **0,5 poin**.
+Contoh: Juara 1 tingkat Nasional = 4 × 5 = **20 poin**. Medali Partisipasi tingkat Kota = 1 × 0,5 = **0,5 poin**. Bobot di atas adalah bawaan dan bisa diubah Super Admin di menu Pengaturan.
 
-Rumus di kode: `lib/metrics/mastery.ts`, `lib/metrics/risk.ts`, `lib/metrics/tryout-kpi.ts`, `lib/metrics/recommend.ts`, `lib/metrics/achievements.ts`. Kecocokan angka dashboard dengan perhitungan manual diuji otomatis (`tests/integration/tka-metrics.test.ts`).
+---
+
+## Kelengkapan Input Pekanan
+
+Halaman Input Pekanan dan Laporan Manajemen menilai kelengkapan data setiap sekolah per pekan (Senin–Minggu, WIB).
+
+- **Siswa yang diharapkan** = siswa aktif kelas 6 (SD) atau kelas 9 (SMP) pada tahun ajaran aktif.
+- **Latihan pekanan**: *Lengkap* bila setiap siswa yang diharapkan punya minimal satu catatan latihan pada pekan itu; *Sebagian* bila baru sebagian; *Belum* bila belum ada.
+- **Hasil TO**: dinilai untuk setiap TO sekolah itu yang dilaksanakan **pekan ini atau pekan lalu**. *Lengkap* bila setiap siswa yang diharapkan punya baris nilai (hadir atau tidak hadir) dan siswa yang hadir punya jawaban per butir; *Sebagian* bila baru sebagian siswa, atau hanya nilai total; *Belum* bila belum ada. Pekan tanpa TO tidak dihitung.
+- **Prestasi**: hanya informasi (jumlah prestasi yang dicatat pekan itu), karena pekan tanpa lomba itu wajar.
+- **Status sekolah**: *Lengkap* bila semua yang dihitung Lengkap; *Belum* bila semuanya Belum; selain itu *Sebagian*.
+
+Rumus di kode: `lib/metrics/mastery.ts`, `lib/metrics/risk.ts`, `lib/metrics/tryout-kpi.ts`, `lib/metrics/recommend.ts`, `lib/metrics/achievements.ts`, `lib/metrics/input-status.ts`. Kecocokan angka dashboard dengan perhitungan manual diuji otomatis (`tests/integration/tka-metrics.test.ts`).
