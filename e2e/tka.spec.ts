@@ -49,13 +49,17 @@ test("admin sekolah diarahkan ke sekolahnya; profil siswa, kelompok intervensi, 
   await expect(page.getByRole("heading", { name: "Daftar siswa" })).toBeVisible();
   // School switcher is not offered to a school admin.
   await expect(page.getByLabel("Sekolah", { exact: true })).toHaveCount(0);
+  // Charts are drawn client-side: wait for real line and bar marks before the screenshot.
+  await expect(page.locator(".recharts-line-curve").first()).toBeVisible();
+  await expect(page.locator(".recharts-bar-rectangle").first()).toBeVisible();
   await page.screenshot({ path: "test-results/tka-sekolah.png", fullPage: true });
 
   // Student table: filter, then open a profile.
-  await page.getByLabel("Status").selectOption("berisiko");
+  await page.locator("select#status").selectOption("berisiko");
   await page.locator('table a[href^="/tka/siswa/"]').first().click();
   await expect(page.getByRole("heading", { name: "Rekomendasi fokus intervensi" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Catatan intervensi" })).toBeVisible();
+  await expect(page.locator(".recharts-line-curve").first()).toBeVisible();
   await page.screenshot({ path: "test-results/tka-siswa.png", fullPage: true });
 
   // Another school's dashboard is not reachable.
@@ -67,7 +71,7 @@ test("admin sekolah diarahkan ke sekolahnya; profil siswa, kelompok intervensi, 
   await page.screenshot({ path: "test-results/tka-intervensi.png", fullPage: true });
   for (const fmt of ["Excel", "PDF"]) {
     const dl = page.waitForEvent("download");
-    await page.getByRole("link", { name: fmt }).click();
+    await page.locator(`a[href*="/tka/intervensi/ekspor"][href*="format=${fmt === "PDF" ? "pdf" : "xlsx"}"]`).click();
     expect((await dl).suggestedFilename()).toMatch(new RegExp(`^Kelompok_Intervensi_SDTJBDG_MAT\\.${fmt === "PDF" ? "pdf" : "xlsx"}$`));
   }
 

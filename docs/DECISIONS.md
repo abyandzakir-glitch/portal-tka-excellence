@@ -96,6 +96,9 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 - **Kelompok intervensi** bawaan berisi siswa Perlu Intervensi; opsi "Sertakan Berkembang" tersedia.
 - **PDF ekspor** memakai font bawaan Helvetica. Penyematan font brand (Cabin/Albert Sans, file TTF) dikerjakan bersama laporan PDF manajemen di Fase 5.
 - **Halaman dashboard tidak memakai cache**: setiap kunjungan menghitung ulang dari data terkini (data tidak pernah basi setelah impor).
+- **Kinerja RLS (migrasi 0004)**: kebijakan membaca peran dan sekolah pengguna sekali per kueri (`(select app.current_role())`, pola InitPlan Supabase), bukan per baris. Aturan akses tidak berubah (uji RLS 33/33). Dashboard turun dari 40–53 detik menjadi 2–5 detik lewat hotspot; di produksi (Vercel + Supabase sama-sama Singapura) latensi per kueri hanya ±1–2 ms.
+- **Grafik**: keterangan target ada di legenda (garis putus abu-abu), bukan label di area plot, agar tidak bertabrakan dengan label ujung seri. Label ujung hanya untuk 2–4 seri. Sumbu jumlah selalu mulai dari 0.
+- **Uji E2E dashboard** (`e2e/tka.spec.ts`): hanya membaca; mencakup ringkasan, telusur heatmap, dashboard sekolah (termasuk penolakan sekolah lain), profil siswa, kelompok intervensi (unduh Excel/PDF), perbandingan TO, dan Pengaturan.
 
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.

@@ -60,11 +60,20 @@ function Marker({ cx, cy, style, r = 4.5 }: { cx?: number; cy?: number; style: S
   }
 }
 
-export function SeriesLegend({ series }: { series: { id: string; label: string; style: SeriesStyle }[] }) {
-  if (series.length < 2) return null;
+export function SeriesLegend({ series, target }: { series: { id: string; label: string; style: SeriesStyle }[]; target?: number | null }) {
+  // One series needs no legend (the title names it) — unless a target line must be explained.
+  if (series.length < 2 && target == null) return null;
   return (
     <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-gray" aria-label="Keterangan seri">
-      {series.map((s) => (
+      {target != null ? (
+        <li className="inline-flex items-center gap-1.5">
+          <svg width="28" height="12" aria-hidden="true">
+            <line x1="1" y1="6" x2="27" y2="6" stroke="#4d4d4f" strokeWidth="1.5" strokeDasharray="4 4" />
+          </svg>
+          Target {target.toLocaleString("id-ID")}
+        </li>
+      ) : null}
+      {(series.length < 2 ? [] : series).map((s) => (
         <li key={s.id} className="inline-flex items-center gap-1.5">
           <svg width="28" height="12" aria-hidden="true">
             <line x1="1" y1="6" x2="27" y2="6" stroke={s.style.color} strokeWidth="2" strokeDasharray={s.style.dash || undefined} />
@@ -142,26 +151,22 @@ export function LineTrend(props: {
     for (const s of props.series) row[s.id] = s.points.find((p) => p.x === x)?.value ?? null;
     return row;
   });
-  const labelEnds = props.series.length <= 4;
+  // Direct end labels for 2–4 series; a single series is named by the chart title.
+  const labelEnds = props.series.length >= 2 && props.series.length <= 4;
   const tick = (v: number) => (props.unit === "percent" ? `${Math.round(v * 100)}%` : v.toLocaleString("id-ID"));
   return (
     <div role="img" aria-label={props.ariaLabel}>
-      <SeriesLegend series={props.series} />
+      <SeriesLegend series={props.series} target={props.target} />
       <div style={{ height: props.height ?? 260 }}>
         <ResponsiveContainer width="100%" height="100%">
-          {/* Right margin holds end labels and the target label, outside the plot so they never sit on a line. */}
-          <LineChart data={rows} margin={{ top: 8, right: labelEnds || props.target != null ? 64 : 16, bottom: 4, left: 0 }}>
+          {/* Right margin holds the series end labels; the target is named in the legend, so nothing overlaps. */}
+          <LineChart data={rows} margin={{ top: 8, right: labelEnds ? 64 : 16, bottom: 4, left: 0 }}>
             <CartesianGrid stroke={GRID} vertical={false} />
             <XAxis dataKey="x" tickFormatter={xLabel} tick={{ fill: AXIS, fontSize: 12 }} stroke={GRID} tickMargin={6} />
             {/* Counts always start at zero so changes are not exaggerated. */}
             <YAxis domain={props.yDomain ?? (props.unit === "count" ? [0, "auto"] : ["auto", "auto"])} tickFormatter={tick} tick={{ fill: AXIS, fontSize: 12 }} stroke={GRID} width={48} />
             {props.target != null ? (
-              <ReferenceLine
-                y={props.target}
-                stroke="#4d4d4f"
-                strokeDasharray="4 4"
-                label={{ value: `Target ${props.target}`, position: "right", fill: "#4d4d4f", fontSize: 11 }}
-              />
+              <ReferenceLine y={props.target} stroke="#4d4d4f" strokeDasharray="4 4" ifOverflow="extendDomain" />
             ) : null}
             <Tooltip
               cursor={{ stroke: "#b5b5b8", strokeWidth: 1 }}
