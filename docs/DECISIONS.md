@@ -45,6 +45,21 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 - **[Disetujui]** Login email + password. Akun hanya dibuat oleh Super Admin lewat undangan; tidak ada pendaftaran terbuka.
 - **[Disetujui]** Ekstraksi AI **nonaktif secara default**. Super Admin harus mengaktifkannya di Pengaturan; layar impor menampilkan pemberitahuan pemrosesan oleh pihak ketiga.
 
+## 2026-11-17 — Fase 1 (keputusan kecil, diambil sendiri)
+
+- **Next.js 16.4**: `middleware` sekarang bernama `proxy.ts`. Dengan `cacheComponents`, semua pembacaan sesi/cookie dibungkus `<Suspense>`; kerangka halaman tetap statis (Partial Prerender). Proxy hanya pemeriksaan optimistis; setiap halaman/Server Action memanggil `requireUser()` lagi, dan RLS tetap menjadi lapisan otorisasi utama.
+- **Query aplikasi lewat `queryAsUser()`**: setiap query berjalan dalam transaksi `set local role authenticated` + klaim JWT terverifikasi (`supabase.auth.getClaims()`), sehingga RLS berlaku walau memakai Drizzle.
+- **Fungsi `cn` lokal**: generator shadcn menambahkan paket npm pihak ketiga `cn@0.5.2`. Diganti fungsi lokal standar (`clsx` + `tailwind-merge`) untuk menghindari dependensi tambahan yang asal-usulnya tidak terverifikasi.
+- **Logo**: PNG asli berupa kanvas 4500×4500 dengan banyak ruang kosong, dan file `*-symbol.png` masih memuat logotype berwarna putih. Dibuat salinan web ter-crop (`public/brand/web/`, lewat `pnpm brand:trim-logos`) — hanya crop + skala seragam, tanpa mengubah bentuk/warna. File asli tidak diubah. Zona bersih 1/3 tinggi simbol diterapkan lewat padding komponen `MasterLogo`.
+- **Warna grafik per sekolah**: SD = merah (`#ED1C24`, `#8C1C22`, `#F2777B`), SMP = biru (`#0E4E96`, `#5B8FD1`), masing-masing dengan pola garis & bentuk marker berbeda (`lib/brand/schools.ts`).
+- **Audit log**: trigger per baris untuk master data, prestasi, intervensi, pengaturan, pengguna; trigger per *statement* (jumlah baris + ID batch) untuk tabel bervolume tinggi (`tryout_scores`, `item_responses`, `practice_logs`) agar satu impor TO tidak menghasilkan ribuan baris audit. `import_rows` (staging) tidak diaudit; batch-nya diaudit.
+- **Policy RLS tidak memakai `FOR ALL`** pada tabel yang saling mereferensikan (`tryouts` ↔ `tryout_schools`) untuk mencegah rekursi policy; ditulis per perintah.
+- **Level kognitif Bahasa Indonesia** dibiarkan kosong di seed karena CLAUDE.md §7.1 hanya mendefinisikannya untuk Matematika.
+- **Seed dummy**: deterministik (seed RNG tetap); NISN diawali `99` sebagai penanda dummy; akun demo memakai domain `demo.talentajuara.test` (`.test` adalah domain cadangan, bukan kotak surat nyata); kata sandi demo dari `SEED_DEMO_PASSWORD`, tidak pernah ditulis di kode.
+- **Contoh kasus tepi di seed**: TO 4 Bahasa Indonesia SDTJPKU hanya berisi nilai total (fallback); butir no. 7 di setiap TO 3 dianulir; ±3% siswa absen per TO; 8% prestasi tanpa padanan peringkat ("Medali Partisipasi" dll. di Catatan); nama alumni yang tidak ada di master siswa; prestasi periode yang sama tahun lalu untuk perbandingan.
+- **Verifikasi lokal tanpa Supabase** (`pnpm verify:local`): PostgreSQL 17 sementara (paket `embedded-postgres`, dikunci ke 17.9 agar sama dengan versi mayor Supabase) + stub skema `auth`. PGlite sempat dicoba tetapi ditinggalkan karena emulasi protokol socket-nya memutus koneksi pada transaksi.
+- **Prepared statement**: seed & uji RLS memakai `prepare: true` pada koneksi langsung (`DATABASE_URL_DIRECT`); aplikasi memakai `prepare: false` karena lewat pooler mode transaksi (port 6543).
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.
