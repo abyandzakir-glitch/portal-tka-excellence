@@ -1,0 +1,169 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Brand design tokens — Sekolah Talenta Juara (CLAUDE.md §5.2).
+ * Contrast notes (on white):
+ *   brand-gray  #4D4D4F  8.4:1  -> body text
+ *   brand-blue  #0E4E96  8.2:1  -> primary actions, links
+ *   brand-red   #ED1C24  4.0:1  -> large/bold text, icons, graphics ONLY
+ *   red-dark    #B0232A  6.6:1  -> error text
+ *   sky         #00A7E1  2.6:1  -> graphics / focus ring only, never text
+ */
+:root {
+  --brand-red: #ed1c24;
+  --brand-red-dark: #b0232a;
+  --brand-red-tint: #fdeced;
+  --brand-blue: #0e4e96;
+  --brand-blue-dark: #1e3f7c;
+  --brand-blue-deeper: #0a3a70;
+  --brand-blue-tint: #e7eef7;
+  --brand-sky: #00a7e1;
+  --brand-sky-dark: #0082b0;
+  --brand-sky-tint: #e5f6fc;
+  --brand-gray: #4d4d4f;
+  --brand-gray-light: #6b6b6e; /* 5.4:1, secondary text */
+
+  /* Per-school chart colours: level-based hue, distinct shade per school.
+     Always paired with a distinct line dash / marker shape (lib/brand/schools.ts). */
+  --school-sdtjbdg: #ed1c24;
+  --school-sdtjcmh: #8c1c22;
+  --school-sdtjpku: #f2777b;
+  --school-smptjbdg: #0e4e96;
+  --school-smptjpku: #5b8fd1;
+
+  /* Competency mastery — semantic scale, independent of school colours (§7.3). */
+  --status-intervensi: #b42318;
+  --status-intervensi-tint: #fef3f2;
+  --status-berkembang: #b54708;
+  --status-berkembang-tint: #fffaeb;
+  --status-cakap: #027a48;
+  --status-cakap-tint: #ecfdf3;
+  --status-mahir: #0e4e96;
+  --status-mahir-tint: #e7eef7;
+  --status-kurang-data: #6b6b6e;
+  --status-kurang-data-tint: #f2f2f3;
+
+  /* shadcn semantic variables mapped to the brand */
+  --background: #ffffff;
+  --foreground: var(--brand-gray);
+  --card: #ffffff;
+  --card-foreground: var(--brand-gray);
+  --popover: #ffffff;
+  --popover-foreground: var(--brand-gray);
+  --primary: var(--brand-blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--brand-blue-tint);
+  --secondary-foreground: var(--brand-blue-dark);
+  --muted: #f4f5f7;
+  --muted-foreground: var(--brand-gray-light);
+  --accent: var(--brand-sky-tint);
+  --accent-foreground: var(--brand-blue-dark);
+  --destructive: var(--brand-red-dark);
+  --border: #e3e5e8;
+  --input: #d5d8dc;
+  --ring: var(--brand-sky);
+  --chart-1: var(--school-sdtjbdg);
+  --chart-2: var(--school-sdtjcmh);
+  --chart-3: var(--school-sdtjpku);
+  --chart-4: var(--school-smptjbdg);
+  --chart-5: var(--school-smptjpku);
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--brand-gray);
+  --sidebar-primary: var(--brand-blue);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--brand-blue-tint);
+  --sidebar-accent-foreground: var(--brand-blue-dark);
+  --sidebar-border: #e3e5e8;
+  --sidebar-ring: var(--brand-sky);
+}
+
+@theme inline {
+  --font-sans: var(--font-albert-sans), system-ui, sans-serif;
+  --font-heading: var(--font-cabin), system-ui, sans-serif;
+
+  --color-brand-red: var(--brand-red);
+  --color-brand-red-dark: var(--brand-red-dark);
+  --color-brand-red-tint: var(--brand-red-tint);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-blue-dark: var(--brand-blue-dark);
+  --color-brand-blue-deeper: var(--brand-blue-deeper);
+  --color-brand-blue-tint: var(--brand-blue-tint);
+  --color-brand-sky: var(--brand-sky);
+  --color-brand-sky-dark: var(--brand-sky-dark);
+  --color-brand-sky-tint: var(--brand-sky-tint);
+  --color-brand-gray: var(--brand-gray);
+  --color-brand-gray-light: var(--brand-gray-light);
+
+  --color-status-intervensi: var(--status-intervensi);
+  --color-status-intervensi-tint: var(--status-intervensi-tint);
+  --color-status-berkembang: var(--status-berkembang);
+  --color-status-berkembang-tint: var(--status-berkembang-tint);
+  --color-status-cakap: var(--status-cakap);
+  --color-status-cakap-tint: var(--status-cakap-tint);
+  --color-status-mahir: var(--status-mahir);
+  --color-status-mahir-tint: var(--status-mahir-tint);
+  --color-status-kurang-data: var(--status-kurang-data);
+  --color-status-kurang-data-tint: var(--status-kurang-data-tint);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-brand-gray;
+  }
+}
