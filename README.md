@@ -22,10 +22,11 @@ Portal internal untuk memantau persiapan TKA dan prestasi siswa di lima sekolah 
    - **Authentication → Sign In / Providers → Email**: matikan *Allow new users to sign up* (akun hanya dibuat oleh Super Admin).
    - **Authentication → URL Configuration**: isi *Site URL* (mis. `http://localhost:3000` untuk lokal).
    - **Authentication → Email Templates**: arahkan tautan *Invite user* ke `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=invite` dan *Reset password* ke `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`.
-4. Terapkan migrasi database (tabel, RLS, trigger audit):
+4. Terapkan migrasi database (tabel, RLS, trigger audit, bucket Storage `imports` untuk file unggahan):
    ```bash
    pnpm db:migrate
    ```
+   Migrasi `0003` membuat bucket privat `imports` beserta kebijakannya. Pastikan di Dashboard → Storage bucket tersebut muncul dan **tidak** publik.
 5. Isi data dummy (5 sekolah, 300 siswa, 16 TO, 8 pekan latihan, 80 prestasi, 5 akun demo):
    ```bash
    pnpm db:seed            # menolak berjalan jika data sudah ada
@@ -43,7 +44,7 @@ Portal internal untuk memantau persiapan TKA dan prestasi siswa di lima sekolah 
 |---|---|
 | `pnpm check` | lint + typecheck + unit test |
 | `pnpm test:rls` | uji isolasi RLS terhadap database di `.env.local` (jalankan setelah seed) |
-| `pnpm verify:local` | migrasi + seed + uji RLS di PostgreSQL 17 sementara, **tanpa** Supabase/Docker |
+| `pnpm verify:local` | migrasi + seed + uji RLS + uji impor (simpan/ganti/batalkan) + pembuatan file contoh impor, di PostgreSQL 17 sementara, **tanpa** Supabase/Docker |
 | `pnpm build` | build produksi (juga memvalidasi aturan Suspense/`cacheComponents`) |
 
 ## Struktur folder
@@ -58,11 +59,26 @@ lib/db/              skema Drizzle, klien DB, wrapper RLS (withRls)
 lib/auth/            sesi & peran (requireUser, queryAsUser)
 lib/format/          format angka/tanggal Indonesia, pekan, tahun ajaran
 lib/settings/        nilai default ambang, bobot, target
-drizzle/             migrasi SQL (0001 = RLS + audit)
+lib/import/          mesin impor: baca file, deteksi header, pemetaan kolom, parser nilai,
+                     pencocokan siswa/kompetensi, validator TKA (tka/), template (templates/),
+                     staging/commit/rollback ke database (db/)
+lib/metrics/         rumus metrik (fungsi murni + unit test)
+drizzle/             migrasi SQL (0001 = RLS + audit, 0003 = Storage + penjaga rollback)
 scripts/seed/        data dummy deterministik
-tests/integration/   uji RLS
+tests/integration/   uji RLS dan uji impor (database)
+tests/unit/          uji impor template rapi vs file berantakan
+docs/contoh-impor/   file contoh impor (rapi & berantakan) dari data dummy
 proxy.ts             penyegar sesi & pengalih ke /login
 ```
+
+## Alur impor data (Input Pekanan)
+
+1. **Unggah** (`/input/unggah/[jenis]`): file disimpan di bucket `imports`, dibaca, lalu dibuat *draf* batch.
+2. **Pemetaan & pratinjau** (`/input/batch/[id]`): sheet, baris judul, dan kolom dipetakan otomatis (atau memakai pemetaan yang pernah dikonfirmasi sekolah itu). Setiap baris divalidasi; baris bermasalah bisa diubah langsung.
+3. **Simpan**: divalidasi ulang terhadap data master terbaru, lalu ditulis dalam satu transaksi. Data yang digantikan disimpan sebagai snapshot di batch.
+4. **Batalkan** (Super Admin): data batch dihapus dan snapshot dipulihkan. Pembatasan ini juga dijaga trigger database.
+
+Lihat [docs/PANDUAN_ADMIN.md](docs/PANDUAN_ADMIN.md) untuk panduan bagi admin sekolah.
 
 ## Deploy
 

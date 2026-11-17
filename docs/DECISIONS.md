@@ -67,6 +67,19 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 - **[Disetujui]** **Siswa yang tidak ada di master** → baris *error* dengan saran nama mirip, tidak disimpan, tidak dibuat otomatis.
 - **[Disetujui]** **Semua jawaban kosong** di hasil TO → siswa dianggap **absen**. Jawaban kosong sebagian → butir itu "tidak dijawab" (dihitung salah).
 
+### Fase 2 — keputusan kecil (diambil sendiri)
+- **Dropdown di template Excel**: SheetJS Community Edition tidak bisa menulis *data validation*. Elemen `<dataValidations>` disisipkan langsung ke XML worksheet lewat modul ZIP (CFB) bawaan SheetJS, tanpa dependensi baru, di posisi yang sesuai skema ECMA-376 (sebelum `<ignoredErrors>`).
+- **Isi file disimpan di `import_batches.source_json`** (hasil parsing semua sheet), sehingga pemetaan kolom, baris judul, dan sheet bisa diganti tanpa unggah ulang. File asli tetap disimpan di Storage (`imports/<school_id|network>/<batch_id>/<file>`). Trigger audit tidak menyalin `source_json`/`snapshot_json` agar `audit_logs` tidak membengkak.
+- **Pratinjau selalu diturunkan ulang**: `import_rows` dibangun ulang setiap kali pemetaan atau suntingan berubah, dan **sekali lagi tepat sebelum disimpan**, sehingga data yang disimpan selalu divalidasi terhadap data master terkini. Suntingan manual disimpan per nomor baris spreadsheet di `mapping_json.edits`; berganti sheet/baris judul menghapus suntingan.
+- **Snapshot untuk rollback dibuat di dalam Postgres** (`to_jsonb` → `jsonb_populate_recordset`), sehingga id, timestamp, dan batch asal setiap baris lama pulih persis. Hanya batch berstatus *Tersimpan* yang bisa dibatalkan; batch yang *Digantikan* harus menunggu unggahan terbarunya dibatalkan dulu.
+- **Latihan pekanan menggantikan per baris** (siswa + pekan + mapel + sub-kompetensi), bukan per file, karena satu file bisa berisi beberapa pekan.
+- **Kisi-kisi TO yang sudah ada bisa diperbarui** (kunci diralat, butir dianulir): butir dicocokkan per nomor, butir yang tidak ada di file dibiarkan, lalu `is_correct` dan `raw_score` dihitung ulang dari jawaban tersimpan. Kisi-kisi yang membuat TO baru tidak bisa dibatalkan selama TO itu sudah punya hasil.
+- **Kolom "Nilai" di samping jawaban per soal** hanya dipakai sebagai pembanding (peringatan bila selisih > 1 poin); nilai yang disimpan selalu hasil hitung dari jawaban. Kolom terpisah "Nilai Skala" diisi ke `scaled_score`.
+- **Pencocokan nama otomatis** hanya bila kemiripan ≥ 0,88 **dan** unggul ≥ 0,06 dari kandidat kedua; selebihnya error dengan saran nama. Semua pencocokan berbasis nama berstatus *Perlu dicek*, dan penyimpanan membutuhkan centang konfirmasi.
+- **Batas unggahan** 5 MB per file (Server Action dibatasi 6 MB).
+- **Uji impor database** (`tests/integration/import.test.ts`) menulis data, sehingga hanya dijalankan oleh `pnpm verify:local` (database sementara), tidak pernah terhadap project Supabase.
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.
+- `.env.local` di mesin pengembang masih berisi nilai contoh (belum tersambung ke project Supabase). Migrasi `0002`/`0003` baru diverifikasi di database lokal (`pnpm verify:local`) dan belum diterapkan ke cloud.
