@@ -79,6 +79,13 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 - **Batas unggahan** 5 MB per file (Server Action dibatasi 6 MB).
 - **Uji impor database** (`tests/integration/import.test.ts`) menulis data, sehingga hanya dijalankan oleh `pnpm verify:local` (database sementara), tidak pernah terhadap project Supabase.
 
+## 2026-11-17 — Fase 3 (disetujui)
+
+- **[Disetujui]** **Penguasaan kompetensi** = 70% × (% benar TO) + 30% × (% benar latihan). Di dalam tiap sumber, data dalam 4 pekan terakhir berbobot 2×. Bila hanya satu sumber yang punya data, sumber itu dipakai 100%. "4 pekan terakhir" dihitung mundur dari **akhir periode yang dipilih** di filter (bawaan: hari ini). Batas minimal 5 butir menjumlahkan butir dari kedua sumber.
+- **[Disetujui]** **Status siswa per mapel** = status penguasaan atas seluruh butir mapel itu (ambang yang sama). **Status keseluruhan** = status terendah dari semua mapel. **"Berisiko"** (aturan nilai TO) adalah penanda terpisah. KPI "Perlu Intervensi" menghitung siswa yang Perlu Intervensi **atau** Berisiko.
+- **[Disetujui]** **% penguasaan sekolah/kelas** = gabungan semua butir siswa di grup itu (total benar ÷ total butir, dengan bobot yang sama), bukan rata-rata per siswa.
+- **[Disetujui]** **Rekomendasi intervensi**: skor = (1 − penguasaan) × porsi butir kompetensi itu di kisi-kisi TO dalam periode; hanya kompetensi dengan data cukup; 3 teratas.
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.
