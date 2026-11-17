@@ -226,6 +226,13 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
         ) : null}
       </dl>
 
+      {source?.sheets[0]?.name === "Hasil ekstraksi AI" && isDraft ? (
+        <p className="rounded-lg border border-brand-sky/40 bg-brand-sky-tint p-3 text-sm" role="note">
+          <span className="font-medium">Data ini hasil ekstraksi AI.</span> Cocokkan setiap baris dengan dokumen aslinya (tautan “File asli” di atas)
+          sebelum menyimpan. Kolom yang kurang diyakini AI ditandai “Perlu dicek”.
+        </p>
+      ) : null}
+
       {batch.status === "superseded" ? (
         <p className="rounded-lg border border-border bg-status-kurang-data-tint p-3 text-sm">
           Data dari unggahan ini sudah digantikan oleh unggahan yang lebih baru untuk try out dan sekolah yang sama.{" "}

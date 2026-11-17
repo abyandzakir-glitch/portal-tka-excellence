@@ -52,6 +52,7 @@ export const ACHIEVEMENT_FIELDS: FieldSet = {
     { key: "organizer", label: "Penyelenggara", synonyms: ["penyelenggara", "penyelenggara lomba", "panitia", "organizer", "pelaksana"] },
     { key: "evidence", label: "Link Bukti", synonyms: ["link bukti", "bukti", "link", "tautan", "sertifikat", "dokumentasi", "url", "link sertifikat"] },
     { key: "notes", label: "Catatan", synonyms: ["catatan", "keterangan", "ket", "notes"] },
+    { key: "ai_note", label: "Catatan AI", hint: "Kolom yang kurang diyakini AI", synonyms: ["catatan ai"] },
   ],
 };
 
@@ -215,6 +216,10 @@ export function validateAchievements(rows: readonly RowInput[], ctx: Achievement
         notes.push(`Bukti: ${ev}`);
         issues.push({ level: "warning", field: "evidence", message: "Link bukti bukan alamat web (http…); dipindah ke Catatan." });
       }
+    }
+    const aiUnsure = cellToString(values.ai_note);
+    if (aiUnsure) {
+      issues.push({ level: "warning", message: `AI kurang yakin pada: ${aiUnsure}. Cocokkan dengan dokumen aslinya.` });
     }
     const userNotes = cellToString(values.notes);
     if (userNotes) notes.unshift(userNotes);

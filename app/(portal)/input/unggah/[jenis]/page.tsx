@@ -5,7 +5,11 @@ import { Suspense } from "react";
 import { PageHeader, TableSkeleton } from "@/components/layout/page";
 import { queryAsUser, requireUser } from "@/lib/auth/session";
 import { todayIso, weekStartOf } from "@/lib/format/id";
+import { eq } from "drizzle-orm";
+import { aiConfigured } from "@/lib/achievements/ai-extract";
+import { settings } from "@/lib/db/schema";
 import { listSchools, listSubjects, listTryouts } from "@/lib/queries/imports";
+import { SETTING_KEYS } from "@/lib/settings/defaults";
 import { UploadForm, type UploadKind } from "./upload-form";
 
 const TITLES: Record<UploadKind, { title: string; description: string }> = {
@@ -65,8 +69,13 @@ async function UploadBody({ params }: { params: PageProps<"/input/unggah/[jenis]
 
 async function UploadContent({ kind }: { kind: UploadKind }) {
   const user = await requireUser(["super_admin", "school_admin"]);
-  const [schoolList, subjectList, tryoutList] = await queryAsUser((tx) =>
-    Promise.all([listSchools(tx), listSubjects(tx), listTryouts(tx)]),
+  const [schoolList, subjectList, tryoutList, aiSetting] = await queryAsUser((tx) =>
+    Promise.all([
+      listSchools(tx),
+      listSubjects(tx),
+      listTryouts(tx),
+      tx.select({ v: settings.valueJson }).from(settings).where(eq(settings.key, SETTING_KEYS.aiExtraction)).limit(1),
+    ]),
   );
   const ownSchool = user.role === "school_admin" ? schoolList.find((s) => s.id === user.schoolId) ?? null : null;
   const level = ownSchool?.level ?? null;
@@ -81,6 +90,7 @@ async function UploadContent({ kind }: { kind: UploadKind }) {
       tryouts={tryoutList.filter((t) => (ownSchool ? t.schoolIds.includes(ownSchool.id) || t.ownerSchoolId === ownSchool.id : true))}
       editableTryoutIds={tryoutList.filter((t) => (ownSchool ? t.ownerSchoolId === ownSchool.id : true)).map((t) => t.id)}
       currentWeek={weekStartOf(todayIso())}
+      aiEnabled={aiSetting[0]?.v === true && aiConfigured()}
     />
   );
 }

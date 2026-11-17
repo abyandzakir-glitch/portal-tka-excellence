@@ -20,6 +20,7 @@
     "brand:trim-logos": "pwsh -NoProfile -File scripts/trim-logos.ps1"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@base-ui/react": "^1.9.0",
     "@date-fns/tz": "^1.5.0",
     "@react-pdf/renderer": "^4.9.0",

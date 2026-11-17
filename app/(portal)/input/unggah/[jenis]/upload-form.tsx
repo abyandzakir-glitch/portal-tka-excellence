@@ -66,6 +66,8 @@ export function UploadForm(props: {
   tryouts: TryoutOption[];
   editableTryoutIds: string[];
   currentWeek: string;
+  /** Achievements: whether AI extraction (PDF/photo/free text) is switched on. */
+  aiEnabled?: boolean;
 }) {
   const { kind, isSuperAdmin, ownSchool } = props;
   const [state, action, pending] = useActionState<ActionState, FormData>(startImport, {});
@@ -254,9 +256,54 @@ export function UploadForm(props: {
 
       <section className="space-y-4 rounded-lg border border-border bg-white p-5">
         <h2 className="text-base font-semibold">3. Unggah</h2>
-        <Field id="file" label="File Excel atau CSV" hint="Format .xlsx, .xls, atau .csv, maksimal 5 MB. File asli disimpan sebagai arsip unggahan.">
-          <Input id="file" name="file" type="file" accept=".xlsx,.xls,.csv" required aria-describedby="file-hint" className="h-auto py-1.5" />
-        </Field>
+        {kind === "prestasi" ? (
+          <>
+            <Field
+              id="file"
+              label="File rekap"
+              hint={`Excel/CSV, atau ${props.aiEnabled ? "PDF dan foto (JPG/PNG) sertifikat/poster/rekap" : "PDF/foto bila fitur AI diaktifkan"}. Maksimal 5 MB. File asli disimpan sebagai arsip unggahan.`}
+            >
+              <Input
+                id="file"
+                name="file"
+                type="file"
+                accept={props.aiEnabled ? ".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp" : ".xlsx,.xls,.csv"}
+                aria-describedby="file-hint"
+                className="h-auto py-1.5"
+              />
+            </Field>
+            <Field
+              id="teks"
+              label="…atau tempel teks rekap"
+              hint="Mis. rekap dari WhatsApp, atau tabel yang disalin dari Excel. Diisi bila tidak memilih file."
+            >
+              <textarea
+                id="teks"
+                name="teks"
+                rows={6}
+                maxLength={50_000}
+                placeholder={"Contoh:\nAlhamdulillah, ananda Alya (5A) meraih Juara 2 Olimpiade Matematika tingkat Provinsi Jawa Barat, 12 Nov 2026."}
+                aria-describedby="teks-hint"
+                className="w-full rounded-lg border border-input bg-white px-2 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-brand-sky"
+              />
+            </Field>
+            {props.aiEnabled ? (
+              <p className="rounded-md border border-brand-sky/40 bg-brand-sky-tint p-3 text-sm" role="note">
+                <span className="font-medium">Pemrosesan oleh layanan AI pihak ketiga.</span> Teks bebas, PDF, dan foto dibaca oleh layanan AI
+                (Anthropic Claude). Hanya isi yang Anda unggah yang dikirim; daftar siswa tidak dikirim. Hasilnya selalu tampil di pratinjau untuk
+                Anda periksa sebelum disimpan. File Excel/CSV dan teks berbentuk tabel tidak dikirim ke AI.
+              </p>
+            ) : (
+              <p className="text-sm text-brand-gray-light">
+                Fitur AI sedang nonaktif: teks yang ditempel harus berbentuk tabel (disalin dari Excel). Super Admin dapat mengaktifkan AI di Pengaturan.
+              </p>
+            )}
+          </>
+        ) : (
+          <Field id="file" label="File Excel atau CSV" hint="Format .xlsx, .xls, atau .csv, maksimal 5 MB. File asli disimpan sebagai arsip unggahan.">
+            <Input id="file" name="file" type="file" accept=".xlsx,.xls,.csv" required aria-describedby="file-hint" className="h-auto py-1.5" />
+          </Field>
+        )}
         {state.error ? (
           <Alert variant="destructive" aria-live="assertive">
             <AlertDescription>{state.error}</AlertDescription>
