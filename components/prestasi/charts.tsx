@@ -84,7 +84,8 @@ export function SplitBar(props: { parts: { label: string; value: number; color: 
             </div>
           ))}
       </div>
-      <ul className="grid gap-1 text-sm sm:grid-cols-3">
+      {/* One item per row: the card is narrow, three columns made labels collide. */}
+      <ul className="space-y-1 text-sm">
         {props.parts.map((p) => (
           <li key={p.label} className="flex items-center gap-2">
             <span aria-hidden="true" className="inline-block size-3 rounded-sm" style={{ background: p.color }} />

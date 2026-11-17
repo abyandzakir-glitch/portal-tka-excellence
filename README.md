@@ -83,6 +83,13 @@ proxy.ts             penyegar sesi & pengalih ke /login
 
 Lihat [docs/PANDUAN_ADMIN.md](docs/PANDUAN_ADMIN.md) untuk panduan bagi admin sekolah.
 
+### Ekstraksi AI prestasi (opsional)
+PDF, foto, dan teks bebas dibaca dengan Claude API (`lib/achievements/ai-extract.ts`). Fitur ini hanya berjalan bila **dua-duanya** terpenuhi:
+1. `ANTHROPIC_API_KEY` diisi di `.env.local` (dan di Vercel). Model diatur lewat `ANTHROPIC_MODEL`; kosong = `claude-opus-5-5`.
+2. Super Admin menyalakan **Ekstraksi AI** di menu Pengaturan (nonaktif secara bawaan).
+
+Yang dikirim hanya isi unggahan; daftar siswa tidak pernah dikirim. Hasil AI selalu melewati pratinjau dan konfirmasi.
+
 ## Deploy
 
 Vercel + Supabase. Set variabel lingkungan yang sama dengan `.env.local` di Vercel (kecuali `DATABASE_URL_DIRECT` dan `SEED_DEMO_PASSWORD`, yang hanya dipakai migrasi/seed dari mesin pengembang). Domain produksi belum ditentukan.

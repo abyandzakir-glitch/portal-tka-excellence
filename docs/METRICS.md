@@ -82,4 +82,30 @@ Untuk setiap siswa dipilih **3 sub-kompetensi** dengan skor tertinggi:
 
 Kompetensi yang penguasaannya rendah **dan** sering diujikan muncul paling atas. Kompetensi dengan data belum cukup atau yang sudah Mahir tidak direkomendasikan.
 
-Rumus di kode: `lib/metrics/mastery.ts`, `lib/metrics/risk.ts`, `lib/metrics/tryout-kpi.ts`, `lib/metrics/recommend.ts`. Kecocokan angka dashboard dengan perhitungan manual diuji otomatis (`tests/integration/tka-metrics.test.ts`).
+---
+
+## Prestasi
+
+| Angka | Cara menghitung |
+|---|---|
+| **Total prestasi** | Jumlah prestasi dengan tanggal prestasi (bukan tanggal input) di dalam periode terpilih. |
+| **Siswa berprestasi (unik)** | Jumlah siswa berbeda. Siswa yang cocok dengan data siswa dihitung per orang. Nama yang belum cocok dihitung per nama tertulis di sekolahnya. Prestasi tanpa nama siswa tidak ikut dihitung di sini. |
+| **Nasional & internasional** | Prestasi bertingkat Nasional atau Internasional. |
+| **Dibandingkan tahun lalu** | Angka yang sama pada tanggal-tanggal yang sama satu tahun sebelumnya. |
+| **Akademik vs Non-Akademik** | Akademik = kategori Akademik + Teknologi. Pengelompokan ini bisa diubah. Prestasi tanpa kategori ditampilkan terpisah. |
+| **Individu / Tim** | Ditentukan dari jumlah nama: 1 nama = individu, lebih dari 1 = tim. |
+
+**Poin Prestasi** = bobot tingkat × bobot peringkat. Poin dipakai agar perbandingan antarsekolah lebih adil daripada sekadar jumlah.
+
+| Tingkat | Bobot | | Peringkat | Bobot |
+|---|---|---|---|---|
+| Kota/Kabupaten | 1 | | Juara 1 / Medali Emas | 5 |
+| Provinsi | 2 | | Juara 2 / Medali Perak | 4 |
+| Nasional | 4 | | Juara 3 / Medali Perunggu | 3 |
+| Internasional | 6 | | Harapan | 2 |
+| Tidak diketahui | 1 | | Finalis | 1 |
+| | | | Tanpa peringkat baku | 0,5 |
+
+Contoh: Juara 1 tingkat Nasional = 4 × 5 = **20 poin**. Medali Partisipasi tingkat Kota = 1 × 0,5 = **0,5 poin**.
+
+Rumus di kode: `lib/metrics/mastery.ts`, `lib/metrics/risk.ts`, `lib/metrics/tryout-kpi.ts`, `lib/metrics/recommend.ts`, `lib/metrics/achievements.ts`. Kecocokan angka dashboard dengan perhitungan manual diuji otomatis (`tests/integration/tka-metrics.test.ts`).

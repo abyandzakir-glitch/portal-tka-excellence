@@ -2,7 +2,7 @@
 
 Panduan ini menjelaskan cara memasukkan data TKA sekolah Anda ke Portal Academic Excellence setiap pekan. Anda tidak perlu keahlian teknis: cukup file Excel atau CSV.
 
-> Bagian input **prestasi** akan ditambahkan setelah fiturnya tersedia.
+Untuk **prestasi**, lihat bagian [Prestasi](#prestasi) di bawah.
 
 ---
 
@@ -89,6 +89,37 @@ Semua unggahan tercatat di **Riwayat unggahan** pada halaman Input Pekanan, leng
 - **Kunci jawaban** boleh kosong kalau hasil TO nanti diunggah dalam format 1/0.
 - Soal yang **dibatalkan** (dianulir): isi "Ya" di kolom Dianulir. Soal itu tidak dihitung dalam nilai maupun penguasaan kompetensi.
 - Kunci jawaban yang diralat atau soal yang dianulir **setelah** hasil TO diunggah: pilih **Perbarui kisi-kisi try out yang sudah ada**. Nilai siswa akan dihitung ulang secara otomatis.
+
+---
+
+## Prestasi
+
+Ada tiga cara memasukkan prestasi:
+
+| Cara | Cocok untuk |
+|---|---|
+| **Unggah rekap** (Input Pekanan → Prestasi) | Banyak prestasi sekaligus, dalam format apa pun |
+| **Tempel teks** (di halaman yang sama) | Rekap dari WhatsApp, atau tabel yang disalin dari Excel |
+| **Tambah prestasi** (Prestasi → Tambah prestasi) | Satu prestasi, atau mengoreksi satu data |
+
+### Unggah rekap
+- Pakai **template standar** (tautan unduh tersedia di halaman unggah), atau langsung unggah **rekap sekolah Anda sendiri**. Portal mengenali kolom seperti "Nama Perlombaan/Event", "Tingkat, Kota Perlombaan", dan "Hasil Perlombaan", lalu menyesuaikan isinya ke daftar baku.
+- **Tidak perlu khawatir data ganda.** Kalau Anda mengunggah ulang rekap yang sama (misalnya rekap kumulatif sejak Juli), prestasi yang sudah tersimpan otomatis dilewati. Hanya baris baru yang disimpan.
+- Portal **tidak memaksakan** isian yang tidak cocok dengan daftar baku. Contoh:
+  - "Medali Partisipasi" atau "Piagam Peserta Aktif": Peringkat dikosongkan, dan tulisan aslinya disimpan di Catatan.
+  - Tingkat "Kecamatan" atau "Bandung Raya": Tingkat dikosongkan, dan tulisan aslinya disimpan di Catatan.
+  - "Juara 1 Kategori Champion" dibaca sebagai *Juara 1*, dan tulisan lengkapnya disimpan di Catatan.
+
+  Baris seperti ini ditandai **Perlu dicek**. Klik **Ubah** kalau ingin memilih nilai yang tepat.
+- **Tanggal tidak lengkap** juga tetap dibaca. "14-16 Agustus 2026" dibaca 14 Agustus. "Agustus" saja dibaca 1 Agustus tahun ajaran berjalan. Tanggal aslinya dicatat sebagai "tanggal perkiraan".
+- **Kategori** ditebak dari bidang lomba (renang → Olahraga, tari → Seni Budaya, olimpiade → Akademik, tahfidz → Non-Akademik). Kalau tidak bisa ditebak, pilih sendiri lewat **Ubah**.
+- **Nama siswa** dicocokkan dengan data siswa. Nama yang tidak ditemukan (misalnya nama panggilan) **tetap disimpan apa adanya** dan tetap dihitung. Sebaiknya tulis nama lengkap supaya prestasi muncul di profil siswa.
+
+### PDF, foto, dan teks bebas (bantuan AI)
+Kalau Super Admin sudah mengaktifkan fitur AI di Pengaturan, Anda juga bisa mengunggah **PDF**, **foto** sertifikat atau poster, atau **menempel teks bebas** (misalnya pengumuman di grup WhatsApp). Portal akan membacanya dengan bantuan layanan AI.
+- Hanya isi yang Anda unggah yang dikirim ke layanan AI. Daftar siswa tidak dikirim.
+- Hasilnya **tidak pernah langsung tersimpan**. Semua baris tampil di pratinjau, dan kolom yang kurang diyakini AI ditandai "AI kurang yakin pada: …". Cocokkan dengan dokumen aslinya sebelum menekan Simpan.
+- Kalau fitur AI nonaktif, teks yang ditempel harus berbentuk tabel (disalin dari Excel).
 
 ---
 
