@@ -29,6 +29,11 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
     password: parsed.data.password,
   });
   if (error) {
+    // Network/service failures are not wrong passwords: tell the user to retry instead.
+    if (!error.status || error.status >= 500) {
+      console.error("[auth] sign-in unavailable:", error.status ?? "-", error.code ?? error.name);
+      return { error: "Layanan login sedang tidak dapat dihubungi. Periksa koneksi internet lalu coba lagi beberapa saat lagi." };
+    }
     return { error: "Email atau kata sandi salah. Silakan coba lagi atau hubungi Super Admin yayasan." };
   }
 
