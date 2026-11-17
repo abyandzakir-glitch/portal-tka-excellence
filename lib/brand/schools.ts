@@ -36,7 +36,7 @@ export const SCHOOL_VISUALS: Record<SchoolCode, SchoolVisual> = {
     level: "sd",
     defaultName: "SD Talenta Juara Cimahi",
     city: "Kota Cimahi",
-    color: "#8C1C22",
+    color: "#9E1F26",
     dash: "6 3",
     marker: "square",
     logo: "/brand/web/logo-sd-full.png",

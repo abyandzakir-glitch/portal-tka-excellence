@@ -30,7 +30,7 @@
   /* Per-school chart colours: level-based hue, distinct shade per school.
      Always paired with a distinct line dash / marker shape (lib/brand/schools.ts). */
   --school-sdtjbdg: #ed1c24;
-  --school-sdtjcmh: #8c1c22;
+  --school-sdtjcmh: #9e1f26;
   --school-sdtjpku: #f2777b;
   --school-smptjbdg: #0e4e96;
   --school-smptjpku: #5b8fd1;
