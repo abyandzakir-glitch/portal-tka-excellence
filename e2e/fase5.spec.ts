@@ -86,4 +86,16 @@ test("super admin membuka pengguna, kelola akun, dan ubah siswa", async ({ brows
 
   await page.goto("/master/kompetensi");
   await expect(page.getByText(/Tambah sub-kompetensi di/).first()).toBeVisible();
+
+  await page.goto("/audit");
+  await expect(page.getByRole("heading", { name: "Audit Log" })).toBeVisible();
+  await page.getByLabel("Data").selectOption("import_batches");
+  await page.getByRole("button", { name: "Terapkan" }).click();
+  await expect(page).toHaveURL(/entitas=import_batches/);
+  await expect(page.getByRole("columnheader", { name: "Rincian" })).toBeVisible();
+  await page.getByText("Lihat sebelum/sesudah").first().click();
+  await expect(page.getByRole("rowheader", { name: "Status" }).first()).toBeVisible();
+  // Uploaded file contents are never shown.
+  await expect(page.getByText("source json")).toHaveCount(0);
+  await page.screenshot({ path: "test-results/audit.png", fullPage: false });
 });
