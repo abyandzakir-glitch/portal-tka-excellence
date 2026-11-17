@@ -46,6 +46,9 @@ Portal internal untuk memantau persiapan TKA dan prestasi siswa di lima sekolah 
 | `pnpm test:rls` | uji isolasi RLS terhadap database di `.env.local` (jalankan setelah seed) |
 | `pnpm verify:local` | migrasi + seed + uji RLS + uji impor (simpan/ganti/batalkan) + pembuatan file contoh impor, di PostgreSQL 17 sementara, **tanpa** Supabase/Docker |
 | `pnpm build` | build produksi (juga memvalidasi aturan Suspense/`cacheComponents`) |
+| `pnpm test:e2e` | uji E2E Playwright (alur impor + pembatasan peran) terhadap Supabase di `.env.local`; butuh seed + `SEED_DEMO_PASSWORD`. Menjalankan `next dev` di port 3100; data kembali seperti semula setelah tes. Pemasangan pertama: `pnpm exec playwright install chromium` |
+
+> **Koneksi database:** host langsung `db.<project>.supabase.co` hanya punya alamat IPv6. Bila jaringan Anda tidak mendukung IPv6, isi `DATABASE_URL_DIRECT` dengan *session pooler* (host pooler yang sama dengan `DATABASE_URL`, port **5432**). `NEXT_PUBLIC_SUPABASE_URL` harus alamat dasar project (`https://<project>.supabase.co`), tanpa `/rest/v1/`.
 
 ## Struktur folder
 

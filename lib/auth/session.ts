@@ -1,6 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { cache } from "react";
 import { profiles, schools } from "@/lib/db/schema";
 import { withRls, type JwtClaims, type RlsTx } from "@/lib/db/rls";
@@ -13,6 +14,9 @@ import type { CurrentUser, Role } from "./roles";
  * Reads cookies, so callers must render inside <Suspense> (cacheComponents).
  */
 export const getClaims = cache(async (): Promise<JwtClaims | null> => {
+  // Session checks are always request-time: getClaims() reads the clock (token expiry),
+  // which Next.js forbids during prerendering unless the render is marked dynamic first.
+  await connection();
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims?.sub) return null;

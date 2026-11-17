@@ -33,19 +33,28 @@ export async function generateMetadata(props: PageProps<"/input/unggah/[jenis]">
   return { title: jenis in TITLES ? TITLES[jenis as UploadKind].title : "Unggah" };
 }
 
-export default async function UploadPage(props: PageProps<"/input/unggah/[jenis]">) {
-  const { jenis } = await props.params;
-  if (!(jenis in TITLES)) notFound();
-  const kind = jenis as UploadKind;
+export default function UploadPage(props: PageProps<"/input/unggah/[jenis]">) {
   return (
     <>
       <nav aria-label="Jejak navigasi" className="mb-2 text-sm">
         <Link href="/input" className="text-brand-blue hover:underline">← Input Pekanan</Link>
       </nav>
-      <PageHeader title={TITLES[kind].title} description={TITLES[kind].description} />
+      {/* params are read inside the boundary so the shell never waits on URL data. */}
       <Suspense fallback={<TableSkeleton rows={6} />}>
-        <UploadContent kind={kind} />
+        <UploadBody params={props.params} />
       </Suspense>
+    </>
+  );
+}
+
+async function UploadBody({ params }: { params: PageProps<"/input/unggah/[jenis]">["params"] }) {
+  const { jenis } = await params;
+  if (!(jenis in TITLES)) notFound();
+  const kind = jenis as UploadKind;
+  return (
+    <>
+      <PageHeader title={TITLES[kind].title} description={TITLES[kind].description} />
+      <UploadContent kind={kind} />
     </>
   );
 }

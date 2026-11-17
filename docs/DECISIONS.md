@@ -82,4 +82,6 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.
-- `.env.local` di mesin pengembang masih berisi nilai contoh (belum tersambung ke project Supabase). Migrasi `0002`/`0003` baru diverifikasi di database lokal (`pnpm verify:local`) dan belum diterapkan ke cloud.
+- 2026-11-17: project Supabase cloud tersambung. Migrasi 0000–0003 dan seed diterapkan; uji RLS (37/37, termasuk lapisan Data API) dan E2E Playwright lolos terhadap cloud. `DATABASE_URL_DIRECT` memakai *session pooler* (port 5432) karena host langsung Supabase hanya IPv6.
+- **E2E Playwright** ditambahkan di Fase 2 (bukan di akhir) karena alur impor adalah alur kritis. Tes berjalan di port 3100 dan membatalkan sendiri unggahannya, sehingga data seed tetap utuh.
+- **`await connection()` di `getClaims()`**: `supabase.auth.getClaims()` membaca jam (masa berlaku token), dan Next.js 16 melarangnya saat prerender kecuali render sudah ditandai dinamis. Semua pemeriksaan sesi kini eksplisit berjalan saat request.
