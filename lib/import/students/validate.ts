@@ -6,7 +6,7 @@
 import type { FieldSet } from "../mapping";
 import { normalizeText, rankBySimilarity } from "../text";
 import { type Issue, type RowInput, statusOf, type ValidationResult, type ValidatedRow } from "../types";
-import { cellToString, isBlank, parseIdentifier } from "../values";
+import { cellToString, parseIdentifier } from "../values";
 
 export const STUDENT_IMPORT_FIELDS: FieldSet = {
   fields: [

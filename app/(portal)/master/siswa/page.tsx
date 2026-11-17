@@ -6,7 +6,7 @@ import { z } from "zod";
 import { EmptyState, PageHeader, TableSkeleton } from "@/components/layout/page";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { isNetworkRole } from "@/lib/auth/roles";
+import { canWriteData, isNetworkRole } from "@/lib/auth/roles";
 import { queryAsUser, requireUser } from "@/lib/auth/session";
 import { SCHOOL_CODES } from "@/lib/brand/schools";
 import { formatNumber } from "@/lib/format/id";
@@ -53,6 +53,7 @@ async function StudentsContent({ searchParams }: { searchParams: PageProps<"/mas
     });
   });
 
+  const canWrite = canWriteData(user.role);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageHref = (p: number) => {
     const sp = new URLSearchParams();
@@ -65,6 +66,12 @@ async function StudentsContent({ searchParams }: { searchParams: PageProps<"/mas
 
   return (
     <div className="space-y-4">
+      {canWrite ? (
+        <p className="text-sm">
+          <Link href="/input/unggah/siswa" className="font-medium text-brand-blue hover:underline">Impor data siswa dari Excel →</Link>
+          <span className="text-brand-gray-light"> (tambah siswa baru, perbarui kelas untuk tahun ajaran aktif)</span>
+        </p>
+      ) : null}
       <StudentFilters showSchoolFilter={isNetworkRole(user.role)} />
       {rows.length === 0 ? (
         <EmptyState
@@ -89,6 +96,7 @@ async function StudentsContent({ searchParams }: { searchParams: PageProps<"/mas
                   <TableHead>Kelas</TableHead>
                   <TableHead>L/P</TableHead>
                   <TableHead>Status</TableHead>
+                  {canWrite ? <TableHead><span className="sr-only">Aksi</span></TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -103,6 +111,11 @@ async function StudentsContent({ searchParams }: { searchParams: PageProps<"/mas
                     <TableCell>
                       {s.isActive ? <Badge variant="secondary">Aktif</Badge> : <Badge variant="outline">Nonaktif</Badge>}
                     </TableCell>
+                    {canWrite ? (
+                      <TableCell>
+                        <Link href={`/master/siswa/${s.id}`} className="text-sm text-brand-blue hover:underline" aria-label={`Ubah data ${s.fullName}`}>Ubah</Link>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>
