@@ -1,7 +1,7 @@
 import "server-only";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+import { loadMasterLogo, registerPdfFonts } from "@/lib/pdf/theme";
 import { Document, Image, Page, renderToBuffer, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { formatNumber } from "@/lib/format/id";
 import { buildXlsx } from "@/lib/import/templates/xlsx";
 import { ACHIEVEMENT_TEMPLATE_HEADERS } from "@/lib/import/templates/achievements";
 import { CATEGORY_LABEL, LEVEL_LABEL, LEVELS, RANK_LABEL } from "./labels";
@@ -63,22 +63,23 @@ export function achievementsXlsx(view: AchievementView, meta: ExportMeta): Uint8
 }
 
 const s = StyleSheet.create({
-  page: { padding: 32, fontSize: 9, fontFamily: "Helvetica", color: "#4D4D4F" },
+  page: { padding: 32, fontSize: 9, fontFamily: "Albert Sans", color: "#4D4D4F" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   strip: { height: 4, backgroundColor: "#0E4E96", marginBottom: 12 },
-  title: { fontSize: 15, fontFamily: "Helvetica-Bold", color: "#0E4E96" },
+  title: { fontSize: 15, fontFamily: "Cabin", fontWeight: 700, color: "#0E4E96" },
   meta: { fontSize: 8.5, color: "#6B6B6E", marginTop: 2 },
   kpis: { flexDirection: "row", gap: 8, marginBottom: 12 },
   kpi: { flex: 1, borderWidth: 0.5, borderColor: "#E6E6E8", borderRadius: 4, padding: 8 },
-  kpiValue: { fontSize: 16, fontFamily: "Helvetica-Bold", marginTop: 2 },
-  h2: { fontSize: 10.5, fontFamily: "Helvetica-Bold", marginTop: 8, marginBottom: 4 },
+  kpiValue: { fontSize: 16, fontFamily: "Cabin", fontWeight: 700, marginTop: 2 },
+  h2: { fontSize: 10.5, fontFamily: "Cabin", fontWeight: 700, marginTop: 8, marginBottom: 4 },
   row: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#E6E6E8", paddingVertical: 2.5 },
-  th: { fontFamily: "Helvetica-Bold", color: "#6B6B6E" },
+  th: { fontFamily: "Albert Sans", fontWeight: 600, color: "#6B6B6E" },
   footer: { position: "absolute", bottom: 18, left: 32, right: 32, fontSize: 7.5, color: "#6B6B6E", flexDirection: "row", justifyContent: "space-between" },
 });
 
 export async function achievementsPdf(view: AchievementView, meta: ExportMeta): Promise<Uint8Array> {
-  const logo = await readFile(path.join(process.cwd(), "public", "brand", "web", "logo-master-full.png")).catch(() => null);
+  registerPdfFonts();
+  const logo = await loadMasterLogo();
   const k = view.kpis;
   const vs = (cur: number, prev: number) => (prev ? `${cur >= prev ? "+" : ""}${Math.round(((cur - prev) / prev) * 100)}% vs tahun lalu (${prev})` : `tahun lalu: ${prev}`);
   const doc = (
@@ -106,7 +107,7 @@ export async function achievementsPdf(view: AchievementView, meta: ExportMeta): 
           ].map(([label, value, note]) => (
             <View key={String(label)} style={s.kpi}>
               <Text>{label}</Text>
-              <Text style={s.kpiValue}>{String(value)}</Text>
+              <Text style={s.kpiValue}>{typeof value === "number" ? formatNumber(value) : String(value)}</Text>
               <Text style={s.meta}>{note}</Text>
             </View>
           ))}
@@ -130,7 +131,7 @@ export async function achievementsPdf(view: AchievementView, meta: ExportMeta): 
                 <Text key={l} style={{ width: "12%", textAlign: "right" }}>{c[l]}</Text>
               ))}
               <Text style={{ width: "10%", textAlign: "right" }}>{Object.values(c).reduce((a, b) => a + b, 0)}</Text>
-              <Text style={{ width: "10%", textAlign: "right" }}>{view.pointsBySchool.find((p) => p.schoolId === sc.id)?.points ?? 0}</Text>
+              <Text style={{ width: "10%", textAlign: "right" }}>{formatNumber(view.pointsBySchool.find((p) => p.schoolId === sc.id)?.points ?? 0)}</Text>
             </View>
           );
         })}
@@ -148,8 +149,8 @@ export async function achievementsPdf(view: AchievementView, meta: ExportMeta): 
           <View key={a.id} style={s.row} wrap={false}>
             <Text style={{ width: "9%" }}>{ddmmyyyy(a.achievedOn)}</Text>
             <Text style={{ width: "9%" }}>{meta.schoolCode(a.schoolId)}</Text>
-            <Text style={{ width: "24%" }}>{a.participants.map((p) => p.rawName).join(", ") || "–"}</Text>
-            <Text style={{ width: "28%" }}>{a.competitionName}</Text>
+            <Text style={{ width: "24%", paddingRight: 8 }}>{a.participants.map((p) => p.rawName).join(", ") || "–"}</Text>
+            <Text style={{ width: "28%", paddingRight: 8 }}>{a.competitionName}</Text>
             <Text style={{ width: "10%" }}>{a.category ? CATEGORY_LABEL[a.category] : "–"}</Text>
             <Text style={{ width: "10%" }}>{a.level ? LEVEL_LABEL[a.level] : "–"}</Text>
             <Text style={{ width: "10%" }}>{a.rank ? RANK_LABEL[a.rank] : "–"}</Text>

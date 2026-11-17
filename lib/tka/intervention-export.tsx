@@ -1,6 +1,5 @@
 import "server-only";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+import { loadMasterLogo, registerPdfFonts } from "@/lib/pdf/theme";
 import { Document, Image, Page, renderToBuffer, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { buildXlsx } from "@/lib/import/templates/xlsx";
 import { MASTERY_STATUS_LABEL } from "@/lib/metrics/mastery";
@@ -48,16 +47,16 @@ export function interventionGroupsXlsx(groups: InterventionGroup[], meta: Export
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 32, fontSize: 9, fontFamily: "Helvetica", color: "#4D4D4F" },
+  page: { padding: 32, fontSize: 9, fontFamily: "Albert Sans", color: "#4D4D4F" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
   strip: { height: 4, backgroundColor: "#0E4E96", marginBottom: 14 },
-  title: { fontSize: 15, fontFamily: "Helvetica-Bold", color: "#0E4E96" },
+  title: { fontSize: 15, fontFamily: "Cabin", fontWeight: 700, color: "#0E4E96" },
   meta: { fontSize: 9, color: "#6B6B6E", marginTop: 2 },
   group: { marginBottom: 12 },
-  groupTitle: { fontSize: 10.5, fontFamily: "Helvetica-Bold", marginBottom: 1 },
+  groupTitle: { fontSize: 10.5, fontFamily: "Cabin", fontWeight: 700, marginBottom: 1 },
   groupSub: { fontSize: 8, color: "#6B6B6E", marginBottom: 4 },
   row: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#E6E6E8", paddingVertical: 2.5 },
-  th: { fontFamily: "Helvetica-Bold", color: "#6B6B6E" },
+  th: { fontFamily: "Albert Sans", fontWeight: 600, color: "#6B6B6E" },
   c1: { width: "6%" },
   c2: { width: "44%" },
   c3: { width: "16%" },
@@ -68,7 +67,8 @@ const styles = StyleSheet.create({
 });
 
 export async function interventionGroupsPdf(groups: InterventionGroup[], meta: ExportMeta): Promise<Uint8Array> {
-  const logo = await readFile(path.join(process.cwd(), "public", "brand", "web", "logo-master-full.png")).catch(() => null);
+  registerPdfFonts();
+  const logo = await loadMasterLogo();
   const doc = (
     <Document title={`Kelompok Intervensi ${meta.schoolName}`} author="Portal Academic Excellence — Sekolah Talenta Juara">
       <Page size="A4" style={styles.page}>

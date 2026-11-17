@@ -128,6 +128,8 @@ Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, han
 - **Nama pengunggah** untuk Manajemen/Admin Sekolah dibaca lewat fungsi `app.staff_name()` (migrasi 0006) yang hanya mengembalikan nama tampilan, bukan email/peran, dan hanya untuk pengguna aktif. RLS profil tetap: selain Super Admin hanya bisa membaca profilnya sendiri.
 - **Menonaktifkan akun** = `profiles.is_active = false` **dan** *ban* di Supabase Auth, sehingga sesi lama tidak bisa diperpanjang. Super Admin tidak bisa menonaktifkan atau menurunkan peran akunnya sendiri (mencegah terkunci).
 - **NIS tidak bisa diubah** dari formulir siswa karena menjadi kunci pencocokan impor; koreksi NIS lewat Super Admin.
+- **Font PDF**: instans statis TTF Cabin (600/700) dan Albert Sans (400/600/700) dari Google Fonts, lisensi SIL OFL 1.1 (teks lisensi di `lib/pdf/fonts/`). Disertakan ke fungsi server lewat `outputFileTracingIncludes` bersama logo, karena di Vercel folder `public/` tidak otomatis ikut terbaca dari disk.
+- **Laporan Manajemen** (`/laporan`) hanya untuk Super Admin dan Manajemen; angka diambil dari pemuat yang sama dengan dashboard sehingga selalu cocok. Admin sekolah tetap punya ekspor per dashboard.
 - **Kode sub-kompetensi baru** dibuat otomatis `<KODE ELEMEN>-NN` (nomor berikutnya yang kosong) agar konsisten dengan seed.
 
 ### Housekeeping

@@ -12,8 +12,8 @@ export interface NavSection {
   items: NavItem[];
 }
 
-const WRITERS = ["super_admin", "school_admin"] as const;
 const SUPER = ["super_admin"] as const;
+const NETWORK = ["super_admin", "viewer"] as const;
 
 export const NAV: NavSection[] = [
   { items: [{ href: "/", label: "Beranda", icon: "home" }] },
@@ -22,6 +22,7 @@ export const NAV: NavSection[] = [
     items: [
       { href: "/tka", label: "TKA", icon: "chart" },
       { href: "/prestasi", label: "Prestasi", icon: "trophy" },
+      { href: "/laporan", label: "Laporan Manajemen", icon: "file", roles: NETWORK },
     ],
   },
   {

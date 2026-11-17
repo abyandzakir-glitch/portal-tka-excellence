@@ -3,6 +3,7 @@
  * Pusat Input Pekanan for management and school admin, user management and
  * master data pages for Super Admin.
  */
+import { writeFileSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 const DEMO = "demo.talentajuara.test";
@@ -31,6 +32,25 @@ test("manajemen melihat status input kelima sekolah tanpa tombol unggah", async 
   await page.getByRole("link", { name: "← Pekan sebelumnya" }).click();
   await expect(page).toHaveURL(/pekan=2026-11-09/);
   await expect(page.getByRole("heading", { name: /Status input pekan/ })).toBeVisible();
+});
+
+test("manajemen mengunduh laporan PDF", async ({ browser }) => {
+  const page = await login(browser, "manajemen");
+  await page.goto("/laporan");
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Unduh PDF" }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^Laporan_Manajemen_.*\.pdf$/);
+  await download.saveAs("test-results/laporan-manajemen.pdf");
+
+  // Same session cookies as the page.
+  const rekap = await page.request.get("/prestasi/ekspor?format=pdf");
+  expect(rekap.headers()["content-type"]).toBe("application/pdf");
+  writeFileSync("test-results/rekap-prestasi.pdf", await rekap.body());
+});
+
+test("admin sekolah tidak bisa membuka laporan manajemen", async ({ browser }) => {
+  const page = await login(browser, "admin.sdtjbdg");
+  await page.goto("/laporan");
+  await expect(page).toHaveURL(/tidak-diizinkan/);
 });
 
 test("admin sekolah melihat status sekolahnya dan bagian unggah", async ({ browser }) => {

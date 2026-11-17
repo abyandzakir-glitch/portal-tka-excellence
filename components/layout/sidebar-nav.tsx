@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BarChart3,
+import { BarChart3,
   BookOpen,
   CalendarDays,
   DoorOpen,
@@ -16,8 +15,7 @@ import {
   Trophy,
   Upload,
   Users,
-  type LucideIcon,
-} from "lucide-react";
+  type LucideIcon, FileText } from "lucide-react";
 import type { NavSection } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +33,7 @@ const ICONS: Record<string, LucideIcon> = {
   settings: Settings,
   shield: ShieldCheck,
   history: History,
+  file: FileText,
 };
 
 function isActive(pathname: string, href: string) {
