@@ -135,6 +135,17 @@ async function main() {
     const [{ n: schoolsSeen }] = await q<{ n: number }[]>`select count(*)::int as n from public.schools`;
     check("tetap bisa membaca daftar sekolah (master)", schoolsSeen === 5);
 
+    // Master data (Fase 5).
+    const [{ id: activeYear }] = await q<{ id: string }[]>`select id from public.academic_years where is_active limit 1`;
+    const ownClassErr = await attempt(q, () => q`insert into public.classes (school_id, academic_year_id, name, grade) values (${SDTJBDG}, ${activeYear}, '6Z', 6)`);
+    check("bisa menambah kelas di sekolahnya", ownClassErr === null, ownClassErr ?? "");
+    const foreignClassErr = await attempt(q, () => q`insert into public.classes (school_id, academic_year_id, name, grade) values (${SMPTJPKU}, ${activeYear}, '9Z', 9)`);
+    check("tidak bisa menambah kelas di sekolah lain", foreignClassErr !== null);
+    const yearErr = await attempt(q, () => q`insert into public.academic_years (label, start_date, end_date, is_active) values ('2099/2100', '2099-07-01', '2100-06-30', false)`);
+    check("tidak bisa menambah tahun ajaran", yearErr !== null);
+    const compUpd = await q`update public.competencies set name = 'X' where true`;
+    check("tidak bisa mengubah kompetensi", compUpd.count === 0);
+
     const tryoutErr = await attempt(q, () => q`update public.tryouts set name = 'X' where owner_school_id is null`);
     const [{ n: renamed }] = await q<{ n: number }[]>`select count(*)::int as n from public.tryouts where name = 'X'`;
     check("tidak bisa mengubah TO jaringan milik yayasan", renamed === 0, tryoutErr ?? "");
@@ -178,6 +189,11 @@ async function main() {
     check("bisa menambah siswa di sekolah mana pun", err === null, err ?? "");
     const [{ n: audit }] = await q<{ n: number }[]>`select count(*)::int as n from public.audit_logs where entity = 'students' and diff_json -> 'new' ->> 'nis' = 'X-RLS-5'`;
     check("perubahan tercatat di audit log", audit === 1);
+    const yearErr = await attempt(q, () => q`insert into public.academic_years (label, start_date, end_date, is_active) values ('2099/2100', '2099-07-01', '2100-06-30', false)`);
+    check("bisa menambah tahun ajaran", yearErr === null, yearErr ?? "");
+    const [{ id: anyComp }] = await q<{ id: string }[]>`select id from public.competencies where parent_id is not null limit 1`;
+    const compUpd = await q`update public.competencies set name = name || ' (uji)' where id = ${anyComp}`;
+    check("bisa mengubah nama kompetensi", compUpd.count === 1);
   });
 
   console.log("\nTanpa login (anon) & pengguna tanpa profil");
