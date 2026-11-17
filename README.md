@@ -137,7 +137,9 @@ Target hosting yang disarankan; domain produksi belum ditentukan yayasan.
    | `ANTHROPIC_API_KEY` | tidak | hanya bila fitur AI dipakai |
    | `ANTHROPIC_MODEL` | tidak | kosong = `claude-opus-5-5` |
 
-   `DATABASE_URL_DIRECT` dan `SEED_DEMO_PASSWORD` **tidak** diisi di Vercel. Pilih region fungsi Vercel `sin1` (Singapore) agar dekat dengan database.
+   Tambahkan juga `ENABLE_EXPERIMENTAL_COREPACK` = `1` agar Vercel memakai versi pnpm dari `packageManager` di `package.json`.
+
+   `DATABASE_URL_DIRECT` dan `SEED_DEMO_PASSWORD` **tidak** diisi di Vercel. Region fungsi sudah diatur ke `sin1` (Singapore) lewat `vercel.json` agar dekat dengan database.
 4. **URL Supabase.** Setelah domain Vercel diketahui, isi Supabase → Authentication → URL Configuration → *Site URL* dengan domain itu, dan tambahkan `https://<domain>/**` ke *Redirect URLs*. Template email undangan & reset kata sandi memakai `{{ .SiteURL }}` (lihat Setup lokal langkah 3).
 5. **Email.** Email bawaan Supabase dibatasi beberapa pesan per jam. Untuk produksi pasang SMTP sendiri: Supabase → Authentication → SMTP Settings (mis. layanan email yayasan).
 6. **Periksa:** masuk sebagai Super Admin, undang satu Admin Sekolah, buka tautan undangan, atur kata sandi, lalu pastikan Admin Sekolah hanya melihat sekolahnya.
