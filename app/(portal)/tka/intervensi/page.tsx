@@ -58,13 +58,13 @@ async function Content({ searchParams }: { searchParams: PageProps<"/tka/interve
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href={toggleHref}
-          aria-pressed={includeDeveloping}
           className={cn(
             "rounded-md border px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-brand-sky",
             includeDeveloping ? "border-brand-blue bg-brand-blue-tint text-brand-blue-dark" : "border-border bg-white",
           )}
         >
-          {includeDeveloping ? "✓ " : ""}Sertakan siswa berstatus Berkembang
+          <span aria-hidden="true">{includeDeveloping ? "✓ " : ""}</span>Sertakan siswa berstatus Berkembang
+          <span className="sr-only">{includeDeveloping ? " (aktif, klik untuk menonaktifkan)" : " (nonaktif, klik untuk mengaktifkan)"}</span>
         </Link>
         <p className="text-sm text-brand-gray-light">
           {data.groups.length} kelompok · {total} siswa unik · {subjectName}
