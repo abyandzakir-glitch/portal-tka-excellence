@@ -86,6 +86,17 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 - **[Disetujui]** **% penguasaan sekolah/kelas** = gabungan semua butir siswa di grup itu (total benar ÷ total butir, dengan bobot yang sama), bukan rata-rata per siswa.
 - **[Disetujui]** **Rekomendasi intervensi**: skor = (1 − penguasaan) × porsi butir kompetensi itu di kisi-kisi TO dalam periode; hanya kompetensi dengan data cukup; 3 teratas.
 
+### Fase 3 — keputusan kecil (diambil sendiri)
+- **Tanpa materialized view (untuk sekarang).** Database hanya menjumlahkan benar/dikerjakan per grup × kompetensi × sumber × keterkinian; rumus dihitung di TypeScript (`lib/metrics`). Dengan ±70 ribu jawaban hal ini cepat, dan angka selalu mutakhir tanpa langkah refresh. MV ditambahkan bila volume menuntut.
+- **Butir tidak dijawab** dihitung sebagai butir yang dikerjakan tetapi salah, baik untuk nilai maupun penguasaan, agar konsisten.
+- **Keterkinian latihan** memakai tanggal Senin pekan latihan (`week_start ≥ awal jendela`). Keterkinian TO memakai tanggal TO.
+- **"TO terakhir"** ditentukan per sekolah (TO terbaru yang diikuti sekolah itu dan sudah punya nilai), sehingga KPI jaringan tetap adil bila jadwal TO antarsekolah berbeda. Target dibandingkan per siswa terhadap target sekolahnya.
+- **Ambang tren** naik/turun = 5 poin persen (konstanta `TREND_DELTA`); kedua sisi harus punya data cukup.
+- **Periode dibatasi tahun ajaran** terpilih, sehingga satu tampilan tidak pernah mencampur dua angkatan.
+- **Kelompok intervensi** bawaan berisi siswa Perlu Intervensi; opsi "Sertakan Berkembang" tersedia.
+- **PDF ekspor** memakai font bawaan Helvetica. Penyematan font brand (Cabin/Albert Sans, file TTF) dikerjakan bersama laporan PDF manajemen di Fase 5.
+- **Halaman dashboard tidak memakai cache**: setiap kunjungan menghitung ulang dari data terkini (data tidak pernah basi setelah impor).
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.
