@@ -22,6 +22,8 @@ export function FilterBar(props: {
   periodLabel: string;
   /** School switcher sets ?sekolah= on this page instead of opening the school dashboard. */
   schoolParam?: boolean;
+  /** With schoolParam: still offer "all schools" (network view). */
+  allSchoolsOption?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -94,7 +96,7 @@ export function FilterBar(props: {
                 props.schoolParam ? update({ sekolah: e.target.value || null }) : update({}, e.target.value ? `/tka/sekolah/${e.target.value}` : "/tka")
               }
             >
-              {props.schoolParam ? null : <option value="">Semua sekolah (jaringan)</option>}
+              {props.schoolParam && !props.allSchoolsOption ? null : <option value="">Semua sekolah (jaringan)</option>}
               {props.schools.map((s) => (
                 <option key={s.code} value={s.code}>{s.name}</option>
               ))}
