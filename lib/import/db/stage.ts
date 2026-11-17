@@ -4,10 +4,11 @@
  * `import_rows`. Re-run after every mapping change or edit, and once more
  * right before commit so the saved data reflects current master data.
  */
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { RlsTx } from "@/lib/db/rls";
 import { academicYears, importBatches, importRows, schools, tryouts } from "@/lib/db/schema";
 import { validateAchievements } from "../achievements/validate";
+import { classKey, validateStudents, type ExistingStudent } from "../students/validate";
 import { todayIso } from "@/lib/format/id";
 import { buildRowInputs } from "../pipeline";
 import { validateBlueprint } from "../tka/blueprint";
@@ -80,6 +81,27 @@ async function validate(tx: RlsTx, batch: ImportBatchRow, config: BatchConfig, i
         defaultWeek: config.options.defaultWeek ?? null,
         today: todayIso(),
         existingKeys,
+      });
+    }
+    case "students": {
+      const schoolRows = await tx.select({ id: schools.id, code: schools.schoolCode, name: schools.name }).from(schools);
+      const scope = batch.schoolId ? [batch.schoolId] : schoolRows.map((s) => s.id);
+      const [year] = await tx.select({ id: academicYears.id }).from(academicYears).where(eq(academicYears.isActive, true)).limit(1);
+      if (!year) throw new ImportError("Belum ada tahun ajaran aktif. Super Admin perlu menambahkannya di Master Data → Tahun Ajaran.");
+      const existing = await tx.execute<ExistingStudent & Record<string, unknown>>(sql`
+        select st.id, st.school_id as "schoolId", st.nis, st.nisn, st.full_name as "fullName", st.gender, st.is_active as "isActive", c.name as "className"
+          from public.students st
+          left join public.class_enrollments e on e.student_id = st.id and e.academic_year_id = ${year.id}
+          left join public.classes c on c.id = e.class_id
+         where st.school_id in (${sql.join(scope.map((id) => sql`${id}`), sql`, `)})`);
+      const owners = await tx.execute<{ nisn: string; school_id: string; nis: string }>(sql`select nisn, school_id, nis from public.students where nisn is not null`);
+      const classRows = await tx.execute<{ school_id: string; name: string }>(sql`select school_id, name from public.classes where academic_year_id = ${year.id}`);
+      return validateStudents(inputs, {
+        schools: schoolRows,
+        batchSchoolId: batch.schoolId,
+        existing: existing as unknown as ExistingStudent[],
+        nisnOwners: new Map(owners.map((o) => [o.nisn, { schoolId: o.school_id, nis: o.nis }])),
+        existingClasses: new Set(classRows.map((c) => classKey(c.school_id, c.name))),
       });
     }
     case "achievements": {

@@ -19,6 +19,9 @@ import {
   academicYears,
   achievementParticipants,
   achievements,
+  classEnrollments,
+  classes,
+  students,
   importBatches,
   importRows,
   itemResponses,
@@ -30,6 +33,7 @@ import {
   tryoutScores,
 } from "@/lib/db/schema";
 import type { AchievementRow } from "../achievements/validate";
+import type { StudentRow } from "../students/validate";
 import { headerSignature } from "../mapping";
 import type { BlueprintItem } from "../tka/blueprint";
 import type { PracticeRow } from "../tka/practice";
@@ -296,6 +300,78 @@ async function commitAchievements(tx: RlsTx, batch: ImportBatchRow, userId: stri
 }
 
 /**
+ * Student master import: creates missing classes in the active year, inserts
+ * new students, updates existing ones (by NIS) and sets their class. The
+ * snapshot keeps the previous student rows and enrolments for rollback.
+ */
+async function commitStudents(tx: RlsTx, batch: ImportBatchRow): Promise<{ saved: number }> {
+  const rows = await savableRows<StudentRow>(tx, batch.id);
+  const [year] = await tx.select({ id: academicYears.id }).from(academicYears).where(eq(academicYears.isActive, true)).limit(1);
+  if (!year) throw new ImportError("Belum ada tahun ajaran aktif.");
+  const existingIds = rows.filter((r) => r.existingId).map((r) => r.existingId!);
+
+  // Snapshot before touching anything.
+  await tx.execute(sql`
+    update public.import_batches set snapshot_json = jsonb_build_object(
+      'yearId', ${year.id}::text,
+      'students', (select coalesce(jsonb_agg(to_jsonb(s)), '[]'::jsonb) from public.students s where s.id = any(${`{${existingIds.join(",")}}`}::uuid[])),
+      'enrollments', (select coalesce(jsonb_agg(to_jsonb(e)), '[]'::jsonb) from public.class_enrollments e
+                       where e.student_id = any(${`{${existingIds.join(",")}}`}::uuid[]) and e.academic_year_id = ${year.id}))
+     where id = ${batch.id}`);
+
+  // Classes that do not exist yet in the active year.
+  const classIds = new Map<string, string>();
+  const existingClasses = await tx.select({ id: classes.id, schoolId: classes.schoolId, name: classes.name }).from(classes).where(eq(classes.academicYearId, year.id));
+  for (const c of existingClasses) classIds.set(`${c.schoolId}|${c.name.toUpperCase()}`, c.id);
+  const createdClassIds: string[] = [];
+  for (const r of rows) {
+    if (!r.className) continue;
+    const key = `${r.schoolId}|${r.className.toUpperCase()}`;
+    if (classIds.has(key)) continue;
+    const [c] = await tx.insert(classes).values({ schoolId: r.schoolId, academicYearId: year.id, name: r.className, grade: r.grade ?? 1 }).returning({ id: classes.id });
+    classIds.set(key, c!.id);
+    createdClassIds.push(c!.id);
+  }
+
+  const insertedIds: string[] = [];
+  const studentIdByRow = new Map<StudentRow, string>();
+  for (const r of rows) {
+    if (r.existingId) {
+      await tx
+        .update(students)
+        .set({ fullName: r.fullName, nisn: r.nisn, gender: r.gender, isActive: true })
+        .where(eq(students.id, r.existingId));
+      studentIdByRow.set(r, r.existingId);
+    } else {
+      const [s] = await tx.insert(students).values({ schoolId: r.schoolId, nis: r.nis, nisn: r.nisn, fullName: r.fullName, gender: r.gender }).returning({ id: students.id });
+      insertedIds.push(s!.id);
+      studentIdByRow.set(r, s!.id);
+    }
+  }
+
+  const withClass = rows.filter((r) => r.className);
+  if (withClass.length) {
+    const ids = withClass.map((r) => studentIdByRow.get(r)!);
+    await tx.delete(classEnrollments).where(and(inArray(classEnrollments.studentId, ids), eq(classEnrollments.academicYearId, year.id)));
+    await tx.insert(classEnrollments).values(
+      withClass.map((r) => ({
+        studentId: studentIdByRow.get(r)!,
+        classId: classIds.get(`${r.schoolId}|${r.className!.toUpperCase()}`)!,
+        academicYearId: year.id,
+        schoolId: r.schoolId,
+      })),
+    );
+  }
+
+  await tx.execute(sql`
+    update public.import_batches
+       set snapshot_json = snapshot_json || jsonb_build_object('insertedStudentIds', ${JSON.stringify(insertedIds)}::jsonb,
+                                                               'createdClassIds', ${JSON.stringify(createdClassIds)}::jsonb)
+     where id = ${batch.id}`);
+  return { saved: rows.length };
+}
+
+/**
  * Validates once more against current master data, then writes the batch.
  * Runs entirely inside the caller's (RLS) transaction: all or nothing.
  */
@@ -322,6 +398,9 @@ export async function commitBatch(tx: RlsTx, batchId: string, userId: string): P
       break;
     case "achievements":
       ({ saved } = await commitAchievements(tx, batch, userId));
+      break;
+    case "students":
+      ({ saved } = await commitStudents(tx, batch));
       break;
   }
 
@@ -401,6 +480,40 @@ export async function rollbackBatch(tx: RlsTx, batchId: string, userId: string):
     }
     case "achievements": {
       await tx.delete(achievements).where(eq(achievements.importBatchId, batchId));
+      break;
+    }
+    case "students": {
+      const inserted = (snapshot.insertedStudentIds as string[] | undefined) ?? [];
+      const yearId = snapshot.yearId as string;
+      if (inserted.length) {
+        // Deleting a student cascades to scores, logs, achievements and notes: refuse when any exist.
+        const [{ n }] = await tx.execute<{ n: number }>(sql`
+          select (select count(*) from public.tryout_scores where student_id = any(${`{${inserted.join(",")}}`}::uuid[]))
+               + (select count(*) from public.practice_logs where student_id = any(${`{${inserted.join(",")}}`}::uuid[]))
+               + (select count(*) from public.achievement_participants where student_id = any(${`{${inserted.join(",")}}`}::uuid[]))
+               + (select count(*) from public.interventions where student_id = any(${`{${inserted.join(",")}}`}::uuid[])) as n`);
+        if (Number(n) > 0) {
+          throw new ImportError("Sebagian siswa dari impor ini sudah punya nilai, latihan, prestasi, atau catatan intervensi, sehingga impor tidak bisa dibatalkan. Koreksi datanya satu per satu di Master Data → Siswa.");
+        }
+        await tx.delete(students).where(inArray(students.id, inserted));
+      }
+      await tx.execute(sql`
+        update public.students t
+           set full_name = s.full_name, nisn = s.nisn, gender = s.gender, is_active = s.is_active
+          from jsonb_populate_recordset(null::public.students, ${snap("students")}) s
+         where t.id = s.id`);
+      await tx.execute(sql`
+        delete from public.class_enrollments e
+         using jsonb_populate_recordset(null::public.students, ${snap("students")}) s
+         where e.student_id = s.id and e.academic_year_id = ${yearId}`);
+      await tx.execute(sql`insert into public.class_enrollments
+        select * from jsonb_populate_recordset(null::public.class_enrollments, ${snap("enrollments")}) on conflict do nothing`);
+      const createdClasses = (snapshot.createdClassIds as string[] | undefined) ?? [];
+      if (createdClasses.length) {
+        await tx.execute(sql`
+          delete from public.classes c where c.id = any(${`{${createdClasses.join(",")}}`}::uuid[])
+             and not exists (select 1 from public.class_enrollments e where e.class_id = c.id)`);
+      }
       break;
     }
     default:

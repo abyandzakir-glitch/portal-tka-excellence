@@ -72,6 +72,7 @@ export const importType = pgEnum("import_type", [
   "tryout_results",
   "practice_logs",
   "achievements",
+  "students",
 ]);
 /** superseded = replaced by a newer upload for the same scope (e.g. same TO + school). */
 export const importStatus = pgEnum("import_status", ["draft", "committed", "rolled_back", "failed", "superseded"]);

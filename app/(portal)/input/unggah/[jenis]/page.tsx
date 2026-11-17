@@ -25,6 +25,10 @@ const TITLES: Record<UploadKind, { title: string; description: string }> = {
     title: "Unggah Prestasi",
     description: "Rekap prestasi siswa dalam format apa pun: template standar, atau rekap sekolah sendiri. Sistem mencocokkan kolom, menormalkan tingkat dan peringkat, lalu menampilkan pratinjau. Prestasi yang sudah tersimpan otomatis dilewati.",
   },
+  siswa: {
+    title: "Impor Data Siswa",
+    description: "Tambah atau perbarui data siswa dari Excel/CSV (berdasarkan NIS), termasuk kelasnya di tahun ajaran aktif. Siswa yang tidak ada di file tidak diubah.",
+  },
   kisi: {
     title: "Unggah Kisi-kisi Try Out",
     description: "Petakan setiap nomor soal ke sub-kompetensi. Kisi-kisi ini menjadi dasar analisis penguasaan kompetensi siswa.",

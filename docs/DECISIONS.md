@@ -116,6 +116,13 @@ Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, han
 - **Nama lomba kosong** (pola file yang hanya punya bidang) → bidang dipakai sebagai nama lomba, dengan peringatan.
 - **Template standar** belum ada dari yayasan; dibuat dari CLAUDE.md §8.1 dan disimpan di `docs/templates/` untuk ditinjau.
 
+## 2026-11-17 — Fase 5 (disetujui)
+
+- **[Disetujui]** **Akun pengguna dibuat lewat undangan email** (Supabase Auth). Email bawaan Supabase dibatasi beberapa email per jam; untuk produksi disarankan SMTP sendiri (Dashboard Supabase → Authentication → SMTP).
+- **[Disetujui]** **Data siswa** diimpor/diedit oleh admin sekolah (sekolahnya sendiri) dan Super Admin (semua). Impor menambah atau memperbarui siswa berdasarkan NIS; siswa yang tidak ada di file **tidak** dinonaktifkan otomatis (ada tombol terpisah).
+- **[Disetujui]** **Peran Guru/Wali Kelas ditunda**; saat ini guru melihat dashboard sekolahnya dan mencatat intervensi.
+- **[Disetujui]** **Deploy**: konfigurasi dan langkah disiapkan; menghubungkan repositori ke akun Vercel yayasan dilakukan pemilik akun.
+
 ### Housekeeping
 - File spesifikasi diganti nama `CLAUDE.md.md` → `CLAUDE.md`; logo dipindah dari `brand-assets/` ke `public/brand/`.
 - Template prestasi standar (`Ringkasan_Prestasi_2026_Template_Standar.xlsx`) **belum tersedia** di repo; dibutuhkan paling lambat Fase 4 di `docs/templates/`.

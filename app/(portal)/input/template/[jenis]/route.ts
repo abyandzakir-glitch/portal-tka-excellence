@@ -2,10 +2,11 @@ import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { queryAsUser, requireUser } from "@/lib/auth/session";
-import { schools, subjects, tryouts, tryoutSchools } from "@/lib/db/schema";
+import { schools, students, subjects, tryouts, tryoutSchools } from "@/lib/db/schema";
 import { todayIso } from "@/lib/format/id";
 import { cognitiveLevelsFor, loadCompetencies, loadRoster, loadSubjects, loadTryoutItems } from "@/lib/import/db/context";
 import { buildAchievementTemplate } from "@/lib/import/templates/achievements";
+import { buildStudentTemplate } from "@/lib/import/templates/students";
 import { buildBlueprintTemplate, buildPracticeTemplate, buildResultsTemplate } from "@/lib/import/templates/tka";
 import { parseWeekStart } from "@/lib/import/values";
 
@@ -103,6 +104,24 @@ export async function GET(req: NextRequest, ctx: RouteContext<"/input/template/[
       students: data.roster.students,
     });
     return file(bytes, `Template_Latihan_Pekanan_${data.s.schoolCode}_${week}.xlsx`);
+  }
+
+  if (jenis === "siswa") {
+    const schoolId = ownSchool ?? q.get("sekolah");
+    if (!schoolId || !id.safeParse(schoolId).success) return notFound("Pilih sekolah terlebih dahulu.");
+    const data = await queryAsUser(async (tx) => {
+      const [s] = await tx.select().from(schools).where(eq(schools.id, schoolId)).limit(1);
+      if (!s) return null;
+      return { s, roster: await loadRoster(tx, s.id), genders: await tx.select({ nis: students.nis, gender: students.gender }).from(students).where(eq(students.schoolId, s.id)) };
+    });
+    if (!data) return notFound("Sekolah tidak ditemukan.");
+    const genderByNis = new Map(data.genders.map((g) => [g.nis, g.gender]));
+    const bytes = buildStudentTemplate({
+      schoolCode: data.s.schoolCode,
+      schoolName: data.s.name,
+      students: data.roster.students.map((st) => ({ ...st, gender: genderByNis.get(st.nis) ?? null })),
+    });
+    return file(bytes, `Template_Data_Siswa_${data.s.schoolCode}.xlsx`);
   }
 
   if (jenis === "prestasi") {

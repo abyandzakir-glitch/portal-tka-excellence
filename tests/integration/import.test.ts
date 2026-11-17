@@ -273,6 +273,39 @@ async function main() {
   await asUser(superAdmin, (tx) => rollbackBatch(tx, a1.id, superAdmin));
   check("batalkan → prestasi & peserta kembali seperti semula", JSON.stringify(await achState()) === JSON.stringify(achBefore));
 
+  // ---------------------------------------------------------------------------
+  console.log("\nData siswa: tambah, pindah kelas, kelas baru, batalkan");
+  const stState = async () =>
+    one(client<{ s: number; c: number; e: string }[]>`
+      select (select count(*)::int from public.students where school_id = ${SDTJBDG}) as s,
+             (select count(*)::int from public.classes where school_id = ${SDTJBDG}) as c,
+             (select string_agg(st.nis || ':' || cl.name, ',' order by st.nis) from public.class_enrollments e
+                join public.students st on st.id = e.student_id join public.classes cl on cl.id = e.class_id
+               where e.school_id = ${SDTJBDG}) as e`);
+  const stBefore = await stState();
+  const moved = roster[0]!;
+  const stFile: Cell[][] = [
+    ["No. Induk", "Nama Lengkap", "JK", "Rombel"],
+    [moved.nis, moved.full_name, "L", "6C"],
+    ["2099001", "Siswa Baru Uji", "perempuan", "VI-C"],
+  ];
+  const sb = await upload(adminBdg, "students", SDTJBDG, stFile, {});
+  check("pratinjau siswa: 1 baru + 1 pindah kelas, kelas 6C akan dibuat", sb.config.summary.error === 0 && sb.config.fileIssues.some((i) => /1 siswa baru akan ditambahkan dan 1 siswa diperbarui/.test(i.message)), JSON.stringify(sb.config));
+  await asUser(adminBdg, (tx) => commitBatch(tx, sb.id, adminBdg));
+  const stAfter = await stState();
+  check("siswa bertambah 1 dan kelas 6C dibuat", stAfter.s === stBefore.s + 1 && stAfter.c === stBefore.c + 1, JSON.stringify({ stBefore: { s: stBefore.s, c: stBefore.c }, stAfter: { s: stAfter.s, c: stAfter.c } }));
+  check("siswa lama pindah ke 6C, siswa baru di 6C", stAfter.e.includes(`${moved.nis}:6C`) && stAfter.e.includes("2099001:6C"));
+
+  const [newStudent] = await client<{ id: string }[]>`select id from public.students where nis = '2099001' and school_id = ${SDTJBDG}`;
+  await client`insert into public.achievements (id, school_id, achieved_on, competition_name) values ('00000000-0000-4000-8000-0000000000a1', ${SDTJBDG}, '2026-11-01', 'Lomba Pengaman Uji')`;
+  await client`insert into public.achievement_participants (achievement_id, school_id, student_id, raw_name) values ('00000000-0000-4000-8000-0000000000a1', ${SDTJBDG}, ${newStudent!.id}, 'Siswa Baru Uji')`;
+  const guarded = await expectError(() => asUser(superAdmin, (tx) => rollbackBatch(tx, sb.id, superAdmin)));
+  check("batal ditolak bila siswa baru sudah punya prestasi (tidak ada data yang ikut terhapus)", guarded !== null && /tidak bisa dibatalkan/.test(guarded), guarded ?? "berhasil");
+  await client`delete from public.achievements where id = '00000000-0000-4000-8000-0000000000a1'`;
+
+  await asUser(superAdmin, (tx) => rollbackBatch(tx, sb.id, superAdmin));
+  check("batalkan → siswa, kelas, dan penempatan kelas kembali seperti semula", JSON.stringify(await stState()) === JSON.stringify(stBefore), JSON.stringify({ now: await stState(), stBefore }));
+
   console.log(`\n${passes} lulus, ${failures} gagal`);
   if (failures > 0) process.exitCode = 1;
 }

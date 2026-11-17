@@ -19,6 +19,7 @@ import type { Issue, RowStatus } from "@/lib/import/types";
 import { cellToString } from "@/lib/import/values";
 import { CATEGORIES, CATEGORY_LABEL, LEVEL_LABEL, LEVELS, RANK_LABEL, RANKS } from "@/lib/achievements/labels";
 import type { AchievementRow } from "@/lib/import/achievements/validate";
+import type { StudentRow } from "@/lib/import/students/validate";
 import { getBatch, listBatchRows, listSchools, listSubjects } from "@/lib/queries/imports";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BatchStatusBadge, formatDateTime } from "../../status";
@@ -97,6 +98,7 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
     tryout_results: ["NIS", "Nama", "Kehadiran", "Nilai", "Soal dijawab"],
     practice_logs: ["NIS", "Nama", "Pekan", "Mapel", "Sub-kompetensi", "Dikerjakan", "Benar"],
     achievements: ["Tanggal", "Sekolah", "Peserta", "Nama Lomba", "Kategori", "Tingkat", "Peringkat", "Catatan"],
+    students: ["NIS", "NISN", "Nama", "L/P", "Kelas", "Sekolah", "Perubahan"],
   };
   const schoolCode = new Map(data.schoolList.map((s) => [s.id, s.code]));
   const previewRows: PreviewRow[] = data.rows.map((r) => {
@@ -118,6 +120,11 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
             d.hasItemDetail ? `${d.responses.filter((x) => x.answer != null).length} dari ${d.responses.length}` : "Nilai total",
           ]
         : [raw(values, "nis") || raw(values, "nisn"), raw(values, "name"), raw(values, "attendance"), raw(values, "total_score"), "–"];
+    } else if (config.kind === "students") {
+      const d = r.normalizedJson as StudentRow | null;
+      cells = d
+        ? [d.nis, d.nisn ?? "–", d.fullName, d.gender ?? "–", d.className ?? "–", schoolCode.get(d.schoolId) ?? "–", d.existingId ? d.changes.join("; ") : "Siswa baru"]
+        : [raw(values, "nis"), raw(values, "nisn"), raw(values, "name"), raw(values, "gender"), raw(values, "class"), raw(values, "school"), "–"];
     } else if (config.kind === "achievements") {
       const d = r.normalizedJson as AchievementRow | null;
       cells = d
