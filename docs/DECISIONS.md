@@ -131,7 +131,7 @@ Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, han
 ### Peluncuran produksi (2026-11-18)
 - Project Supabase **produksi terpisah** (region `ap-southeast-1`, Singapura, sama dengan fungsi Vercel `sin1`; project pertama yang terlanjur dibuat di Tokyo diganti selagi masih kosong) dan project Vercel kedua dari repo yang sama. Situs uji coba tetap hidup untuk pelatihan (data dummy). Push ke `main` memperbarui keduanya.
 - Disiapkan dengan `pnpm prod:migrate` → `pnpm prod:seed` (hanya data master: 5 sekolah, TA 2025/2026 & 2026/2027 (aktif), 4 mapel, 35 sub-kompetensi, 11 pengaturan) → `pnpm prod:admin` (satu Super Admin lewat undangan). Diperiksa: tidak ada siswa/kelas/TO/prestasi/akun demo, semua tabel `public` ber-RLS, bucket `imports` privat.
-- Email undangan memakai email bawaan Supabase dulu (terbatas per jam); undang admin sekolah bertahap. SMTP sendiri menyusul.
+- Email undangan memakai **SMTP Google Workspace yayasan** (`smtp.gmail.com`, App Password akun pengirim). Email bawaan Supabase di project baru menolak alamat di luar anggota tim organisasi Supabase ("Email address … is invalid"), sehingga tidak bisa dipakai untuk mengundang admin sekolah.
 - `NEXT_PUBLIC_SUPABASE_URL` harus berupa origin saja (`https://<ref>.supabase.co`), tanpa `/rest/v1/`; akhiran itu membuat Auth admin API menolak permintaan.
 
 ### Keputusan kecil Fase 5
