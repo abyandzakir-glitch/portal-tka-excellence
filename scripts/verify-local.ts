@@ -28,8 +28,8 @@ const SUPABASE_STUB = `
   create role authenticated nologin;
   create role service_role nologin bypassrls;
   grant usage on schema public to anon, authenticated, service_role;
-  alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated, service_role;
-  alter default privileges in schema public grant usage, select on sequences to anon, authenticated, service_role;
+  -- No default table privileges: newer Supabase projects do not grant them
+  -- either, so migration 0007 must state every grant the app relies on.
 
   create schema auth;
   grant usage on schema auth to anon, authenticated;
