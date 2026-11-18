@@ -129,7 +129,7 @@ Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, han
 - Uji E2E baca-saja (TKA, Fase 5, aksesibilitas) lolos terhadap situs online; jalankan dengan `E2E_BASE_URL=https://… pnpm test:e2e e2e/tka.spec.ts e2e/fase5.spec.ts e2e/a11y.spec.ts`.
 
 ### Peluncuran produksi (2026-11-18)
-- Project Supabase **produksi terpisah** (region `ap-northeast-1`, Tokyo) dan project Vercel kedua dari repo yang sama. Situs uji coba tetap hidup untuk pelatihan (data dummy). Push ke `main` memperbarui keduanya.
+- Project Supabase **produksi terpisah** (region `ap-southeast-1`, Singapura, sama dengan fungsi Vercel `sin1`; project pertama yang terlanjur dibuat di Tokyo diganti selagi masih kosong) dan project Vercel kedua dari repo yang sama. Situs uji coba tetap hidup untuk pelatihan (data dummy). Push ke `main` memperbarui keduanya.
 - Disiapkan dengan `pnpm prod:migrate` → `pnpm prod:seed` (hanya data master: 5 sekolah, TA 2025/2026 & 2026/2027 (aktif), 4 mapel, 35 sub-kompetensi, 11 pengaturan) → `pnpm prod:admin` (satu Super Admin lewat undangan). Diperiksa: tidak ada siswa/kelas/TO/prestasi/akun demo, semua tabel `public` ber-RLS, bucket `imports` privat.
 - Email undangan memakai email bawaan Supabase dulu (terbatas per jam); undang admin sekolah bertahap. SMTP sendiri menyusul.
 - `NEXT_PUBLIC_SUPABASE_URL` harus berupa origin saja (`https://<ref>.supabase.co`), tanpa `/rest/v1/`; akhiran itu membuat Auth admin API menolak permintaan.
