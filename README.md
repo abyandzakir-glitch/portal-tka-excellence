@@ -114,18 +114,17 @@ Yang dikirim hanya isi unggahan; daftar siswa tidak pernah dikirim. Hasil AI sel
 
 Target hosting yang disarankan; domain produksi belum ditentukan yayasan.
 
-1. **Supabase produksi.** Pakai project Supabase region Singapore (terpisah dari project pengembangan). Dari mesin pengembang, arahkan `.env.local` sementara ke project produksi, lalu:
+1. **Supabase produksi.** Buat project Supabase **baru** (region Singapore), terpisah dari project uji coba. Isi kredensialnya di berkas `.env.produksi` (sudah ada templatenya, diabaikan git), lalu:
    ```bash
-   pnpm db:migrate
-   pnpm db:seed --production   # hanya data master: 5 sekolah, tahun ajaran, mapel, kompetensi Pusmendik, pengaturan default
+   pnpm prod:migrate   # menolak berjalan bila .env.produksi menunjuk ke project uji coba
+   pnpm prod:seed      # hanya data master: 5 sekolah, tahun ajaran, mapel, kompetensi Pusmendik, pengaturan default
    ```
-   Mode `--production` tidak membuat siswa, nilai, prestasi, atau akun dummy, dan menolak berjalan bila database sudah berisi data. **Jangan** memakai `pnpm db:seed` tanpa flag ini di produksi. Data siswa lalu diimpor admin sekolah lewat Master Data → Siswa → *Impor data siswa*.
-2. **Akun Super Admin pertama.** Buat pengguna di Supabase Dashboard → Authentication → Users → *Add user* (centang *Auto Confirm*), lalu tambahkan barisnya di tabel `profiles` (SQL Editor):
-   ```sql
-   insert into public.profiles (id, full_name, email, role)
-   select id, 'Nama Super Admin', email, 'super_admin' from auth.users where email = 'alamat@yayasan';
+   `prod:seed` tidak membuat siswa, nilai, prestasi, atau akun dummy, dan menolak berjalan bila database sudah berisi data. Data siswa diimpor admin sekolah lewat Master Data → Siswa → *Impor data siswa*.
+2. **Akun Super Admin pertama:**
+   ```bash
+   pnpm prod:admin --email alamat@yayasan --name "Nama Lengkap"
    ```
-   Pengguna berikutnya diundang dari menu **Pengguna**.
+   Skrip mengirim undangan email dan menyimpan profil Super Admin. Pengguna berikutnya diundang dari menu **Pengguna**.
 3. **Vercel.** *Add New Project* → impor repositori GitHub → framework Next.js terdeteksi otomatis. Isi *Environment Variables*:
 
    | Variabel | Wajib | Catatan |

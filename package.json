@@ -16,6 +16,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file=.env.local scripts/seed/index.ts",
+    "prod:migrate": "drizzle-kit migrate --config=drizzle.prod.config.ts",
+    "prod:seed": "tsx --env-file=.env.produksi scripts/seed/index.ts --production",
+    "prod:admin": "tsx --env-file=.env.produksi scripts/create-admin.ts",
     "verify:local": "tsx scripts/verify-local.ts",
     "brand:trim-logos": "pwsh -NoProfile -File scripts/trim-logos.ps1"
   },
