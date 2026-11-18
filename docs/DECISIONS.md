@@ -128,6 +128,12 @@ Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, han
 - pnpm 12 memerlukan `ENABLE_EXPERIMENTAL_COREPACK=1` di Vercel dan keputusan eksplisit untuk setiap *build script* dependensi (`allowBuilds` di `pnpm-workspace.yaml`).
 - Uji E2E baca-saja (TKA, Fase 5, aksesibilitas) lolos terhadap situs online; jalankan dengan `E2E_BASE_URL=https://… pnpm test:e2e e2e/tka.spec.ts e2e/fase5.spec.ts e2e/a11y.spec.ts`.
 
+### Peluncuran produksi (2026-11-18)
+- Project Supabase **produksi terpisah** (region `ap-northeast-1`, Tokyo) dan project Vercel kedua dari repo yang sama. Situs uji coba tetap hidup untuk pelatihan (data dummy). Push ke `main` memperbarui keduanya.
+- Disiapkan dengan `pnpm prod:migrate` → `pnpm prod:seed` (hanya data master: 5 sekolah, TA 2025/2026 & 2026/2027 (aktif), 4 mapel, 35 sub-kompetensi, 11 pengaturan) → `pnpm prod:admin` (satu Super Admin lewat undangan). Diperiksa: tidak ada siswa/kelas/TO/prestasi/akun demo, semua tabel `public` ber-RLS, bucket `imports` privat.
+- Email undangan memakai email bawaan Supabase dulu (terbatas per jam); undang admin sekolah bertahap. SMTP sendiri menyusul.
+- `NEXT_PUBLIC_SUPABASE_URL` harus berupa origin saja (`https://<ref>.supabase.co`), tanpa `/rest/v1/`; akhiran itu membuat Auth admin API menolak permintaan.
+
 ### Keputusan kecil Fase 5
 - **Status Pusat Input Pekanan** (aturan lengkap di `docs/METRICS.md`): siswa yang diharapkan = siswa aktif kelas 6 (SD) / 9 (SMP) pada TA aktif. *Latihan* Lengkap bila semua siswa itu punya catatan latihan pekan tersebut. *Hasil TO* dihitung untuk TO yang dilaksanakan pekan ini atau pekan lalu; Lengkap bila semua siswa punya baris nilai (hadir/tidak hadir) dan jawaban per butir; nilai total saja = Sebagian. *Prestasi* hanya informasi dan tidak memengaruhi status, karena pekan tanpa lomba itu wajar.
 - **Nama pengunggah** untuk Manajemen/Admin Sekolah dibaca lewat fungsi `app.staff_name()` (migrasi 0006) yang hanya mengembalikan nama tampilan, bukan email/peran, dan hanya untuk pengguna aktif. RLS profil tetap: selain Super Admin hanya bisa membaca profilnya sendiri.
