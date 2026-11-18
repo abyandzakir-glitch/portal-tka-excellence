@@ -140,7 +140,9 @@ Menu **Master Data → Siswa** dan **Master Data → Kelas**. Admin sekolah meng
 
 ### Impor data siswa (awal tahun ajaran atau siswa baru)
 1. Buka **Master Data → Siswa**, klik **Impor data siswa dari Excel**.
-2. Unduh template (sudah berisi siswa sekolah Anda), lalu tambahkan atau ubah barisnya. Kolom wajib: **NIS** dan **Nama Lengkap**. Kolom **Kelas** ditulis seperti `6A`, `VI-B`, atau `Kelas 9 C`.
+2. Unduh template (sudah berisi siswa sekolah Anda), lalu tambahkan atau ubah barisnya. Kolom wajib: **NIS** dan **Nama Lengkap**. Kolom **Kelas** ditulis seperti `6A`, `VI-B`, `Kelas 9 C`, atau dengan nama rombel seperti `9 Ibnu Majid`.
+   - Bila nama kelas di sekolah Anda **tidak memuat angka** (mis. hanya `Ibnu Majid`), pilih salah satu: tulis `9 Ibnu Majid`; **atau** tambahkan kolom **Tingkat** berisi `9`; **atau** buat dulu kelasnya di **Master Data → Kelas** (pilih Tingkat 9, nama `Ibnu Majid`), lalu di file cukup tulis `Ibnu Majid`.
+   - Kelas disimpan dengan nama baku "tingkat + nama", mis. **9 Ibnu Majid**. Huruf besar/kecil dan spasi tidak berpengaruh: `IX - IBNU MAJID` dianggap kelas yang sama.
 3. Unggah, periksa pratinjau, lalu **Simpan**. Pratinjau memberi tahu berapa siswa yang **baru** dan berapa yang **diperbarui** (misalnya pindah kelas).
 
 Hal penting:

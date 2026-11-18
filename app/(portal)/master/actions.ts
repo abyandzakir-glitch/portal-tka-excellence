@@ -6,7 +6,7 @@ import { z } from "zod";
 import { queryAsUser, requireUser } from "@/lib/auth/session";
 import { academicYears, classEnrollments, classes, competencies, students } from "@/lib/db/schema";
 import { academicYearRange } from "@/lib/format/id";
-import { parseClass } from "@/lib/import/students/validate";
+import { classNameFor, parseClass, parseGrade } from "@/lib/import/students/validate";
 
 /**
  * Master data maintenance (Fase 5; CLAUDE.md §7.1 "bisa ditambah/diedit lewat
@@ -99,8 +99,16 @@ export async function addClass(_prev: MasterState, fd: FormData): Promise<Master
   const user = await requireUser(WRITERS);
   const schoolId = user.schoolId ?? String(fd.get("sekolah") ?? "");
   if (!z.uuid().safeParse(schoolId).success) return { error: "Pilih sekolah." };
-  const parsed = parseClass(String(fd.get("nama") ?? ""));
-  if (!parsed) return { error: "Nama kelas harus diawali tingkat, mis. 6A atau 9B." };
+  const nameText = String(fd.get("nama") ?? "").trim();
+  const gradeText = String(fd.get("tingkat") ?? "").trim();
+  if (!nameText) return { error: "Isi nama kelas." };
+  const fromName = parseClass(nameText);
+  const gradeField = gradeText ? parseGrade(gradeText) : null;
+  if (fromName && gradeField != null && fromName.grade !== gradeField) {
+    return { error: `Nama kelas tertulis tingkat ${fromName.grade}, tetapi tingkat yang dipilih ${gradeField}.` };
+  }
+  const parsed = fromName ?? (gradeField != null ? { name: classNameFor(gradeField, nameText), grade: gradeField } : null);
+  if (!parsed) return { error: "Pilih tingkat kelas, atau tulis nama kelas diawali tingkat (mis. 6A atau 9 Ibnu Majid)." };
   return run(() =>
     queryAsUser(async (tx) => {
       const [year] = await tx.select({ id: academicYears.id, label: academicYears.label }).from(academicYears).where(eq(academicYears.isActive, true)).limit(1);

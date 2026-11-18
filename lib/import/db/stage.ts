@@ -8,7 +8,7 @@ import { eq, sql } from "drizzle-orm";
 import type { RlsTx } from "@/lib/db/rls";
 import { academicYears, importBatches, importRows, schools, tryouts } from "@/lib/db/schema";
 import { validateAchievements } from "../achievements/validate";
-import { classKey, validateStudents, type ExistingStudent } from "../students/validate";
+import { validateStudents, type ExistingStudent } from "../students/validate";
 import { todayIso } from "@/lib/format/id";
 import { buildRowInputs } from "../pipeline";
 import { validateBlueprint } from "../tka/blueprint";
@@ -95,13 +95,13 @@ async function validate(tx: RlsTx, batch: ImportBatchRow, config: BatchConfig, i
           left join public.classes c on c.id = e.class_id
          where st.school_id in (${sql.join(scope.map((id) => sql`${id}`), sql`, `)})`);
       const owners = await tx.execute<{ nisn: string; school_id: string; nis: string }>(sql`select nisn, school_id, nis from public.students where nisn is not null`);
-      const classRows = await tx.execute<{ school_id: string; name: string }>(sql`select school_id, name from public.classes where academic_year_id = ${year.id}`);
+      const classRows = await tx.execute<{ school_id: string; name: string; grade: number }>(sql`select school_id, name, grade from public.classes where academic_year_id = ${year.id}`);
       return validateStudents(inputs, {
         schools: schoolRows,
         batchSchoolId: batch.schoolId,
         existing: existing as unknown as ExistingStudent[],
         nisnOwners: new Map(owners.map((o) => [o.nisn, { schoolId: o.school_id, nis: o.nis }])),
-        existingClasses: new Set(classRows.map((c) => classKey(c.school_id, c.name))),
+        existingClasses: classRows.map((c) => ({ schoolId: c.school_id, name: c.name, grade: Number(c.grade) })),
       });
     }
     case "achievements": {

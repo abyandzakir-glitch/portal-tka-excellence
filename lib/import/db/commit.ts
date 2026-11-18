@@ -33,7 +33,7 @@ import {
   tryoutScores,
 } from "@/lib/db/schema";
 import type { AchievementRow } from "../achievements/validate";
-import type { StudentRow } from "../students/validate";
+import { classKey, type StudentRow } from "../students/validate";
 import { headerSignature } from "../mapping";
 import type { BlueprintItem } from "../tka/blueprint";
 import type { PracticeRow } from "../tka/practice";
@@ -322,11 +322,11 @@ async function commitStudents(tx: RlsTx, batch: ImportBatchRow): Promise<{ saved
   // Classes that do not exist yet in the active year.
   const classIds = new Map<string, string>();
   const existingClasses = await tx.select({ id: classes.id, schoolId: classes.schoolId, name: classes.name }).from(classes).where(eq(classes.academicYearId, year.id));
-  for (const c of existingClasses) classIds.set(`${c.schoolId}|${c.name.toUpperCase()}`, c.id);
+  for (const c of existingClasses) classIds.set(classKey(c.schoolId, c.name), c.id);
   const createdClassIds: string[] = [];
   for (const r of rows) {
     if (!r.className) continue;
-    const key = `${r.schoolId}|${r.className.toUpperCase()}`;
+    const key = classKey(r.schoolId, r.className);
     if (classIds.has(key)) continue;
     const [c] = await tx.insert(classes).values({ schoolId: r.schoolId, academicYearId: year.id, name: r.className, grade: r.grade ?? 1 }).returning({ id: classes.id });
     classIds.set(key, c!.id);
@@ -356,7 +356,7 @@ async function commitStudents(tx: RlsTx, batch: ImportBatchRow): Promise<{ saved
     await tx.insert(classEnrollments).values(
       withClass.map((r) => ({
         studentId: studentIdByRow.get(r)!,
-        classId: classIds.get(`${r.schoolId}|${r.className!.toUpperCase()}`)!,
+        classId: classIds.get(classKey(r.schoolId, r.className!))!,
         academicYearId: year.id,
         schoolId: r.schoolId,
       })),

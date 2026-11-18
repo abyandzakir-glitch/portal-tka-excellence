@@ -15,6 +15,9 @@ import { addClass } from "../actions";
 
 export const metadata: Metadata = { title: "Kelas" };
 
+/** SD uses grades 1–6, SMP 7–9. */
+const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
 export default function ClassesPage() {
   return (
     <>
@@ -47,8 +50,20 @@ async function ClassesTable() {
           </div>
         )}
         <div className="space-y-1">
-          <Label htmlFor="nama-kelas">Kelas baru (TA {year.label})</Label>
-          <Input id="nama-kelas" name="nama" required placeholder="mis. 6C" className="h-9 w-32" />
+          <Label htmlFor="tingkat-kelas">Tingkat</Label>
+          <select id="tingkat-kelas" name="tingkat" className="h-9 rounded-lg border border-input bg-white px-2 text-sm">
+            <option value="">Dari nama kelas</option>
+            {GRADES.map((g) => (
+              <option key={g} value={g}>Kelas {g}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="nama-kelas">Nama kelas baru (TA {year.label})</Label>
+          <Input id="nama-kelas" name="nama" required placeholder="mis. 6C atau Ibnu Majid" aria-describedby="nama-kelas-hint" className="h-9 w-56" />
+          <p id="nama-kelas-hint" className="text-xs text-brand-gray-light">
+            Nama tanpa angka (mis. Ibnu Majid) disimpan sebagai &ldquo;9 Ibnu Majid&rdquo; sesuai tingkat yang dipilih.
+          </p>
         </div>
       </ActionForm>
     ) : null;
