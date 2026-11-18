@@ -4,3 +4,8 @@ allowBuilds:
   esbuild: true
   # Postinstall only re-creates local symlinks inside the package (reviewed).
   "@embedded-postgres/windows-x64": true
+  # Linux binary (installed on Vercel): not needed to build the app, so its script is not run.
+  # Only pnpm verify:local uses embedded-postgres; on a Linux dev machine, review its script before setting true.
+  "@embedded-postgres/linux-x64": false
+  "@embedded-postgres/darwin-arm64": false
+  "@embedded-postgres/darwin-x64": false
