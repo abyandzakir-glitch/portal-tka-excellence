@@ -36,14 +36,22 @@ async function main() {
 
   const supabase = createClient(url, secret, { auth: { autoRefreshToken: false, persistSession: false } });
   let userId: string | undefined;
+  let activated = false;
   for (let page = 1; page < 20 && !userId; page++) {
     const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
     if (error) throw new Error(error.message);
-    userId = data.users.find((u) => u.email?.toLowerCase() === email.data)?.id;
+    const found = data.users.find((u) => u.email?.toLowerCase() === email.data);
+    userId = found?.id;
+    activated = Boolean(found?.email_confirmed_at || found?.last_sign_in_at);
     if (data.users.length < 1000) break;
   }
-  if (userId) {
-    console.log("✓ Akun sudah ada; profil diperbarui menjadi Super Admin.");
+  if (userId && activated) {
+    console.log("✓ Akun sudah aktif; profil diperbarui menjadi Super Admin.");
+  } else if (userId) {
+    // Invited but never accepted (e.g. the first email carried an old Site URL): send again.
+    const { error } = await supabase.auth.admin.inviteUserByEmail(email.data, { data: { full_name: name.data } });
+    if (error) throw new Error(error.message);
+    console.log(`✓ Akun belum diaktifkan; undangan dikirim ulang ke ${email.data}.`);
   } else {
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email.data, { data: { full_name: name.data } });
     if (error || !data.user) throw new Error(error?.message ?? "undangan gagal");
