@@ -15,7 +15,8 @@ async function login(browser: Browser, local: string, width = 1440): Promise<Pag
   await page.getByLabel("Email").fill(`${local}@${DEMO}`);
   await page.getByLabel("Kata sandi").fill(PASSWORD);
   await page.getByRole("button", { name: "Masuk" }).click();
-  await expect(page.getByRole("heading", { name: "Beranda" })).toBeVisible();
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 120_000 });
+  await expect(page.getByRole("heading", { name: "Beranda", level: 1 })).toBeVisible();
   return page;
 }
 
@@ -95,7 +96,7 @@ test("super admin membuka pengguna, kelola akun, dan ubah siswa", async ({ brows
 
   await page.goto("/audit");
   await expect(page.getByRole("heading", { name: "Audit Log" })).toBeVisible();
-  await page.getByLabel("Data").selectOption("import_batches");
+  await page.getByLabel("Data", { exact: true }).selectOption("import_batches");
   await page.getByRole("button", { name: "Terapkan" }).click();
   await expect(page).toHaveURL(/entitas=import_batches/);
   await expect(page.getByRole("columnheader", { name: "Rincian" })).toBeVisible();

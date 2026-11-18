@@ -123,6 +123,11 @@ Dasar: struktur 4 file rekap prestasi asli dari sekolah (dibaca dengan izin, han
 - **[Disetujui]** **Peran Guru/Wali Kelas ditunda**; saat ini guru melihat dashboard sekolahnya dan mencatat intervensi.
 - **[Disetujui]** **Deploy**: konfigurasi dan langkah disiapkan; menghubungkan repositori ke akun Vercel yayasan dilakukan pemilik akun.
 
+### Deploy uji coba (2026-11-18)
+- Vercel `https://portal-tka-excellence.vercel.app`, fungsi di `sin1`, tersambung ke project Supabase pengembangan (data dummy) atas pilihan pemilik akun. Produksi dengan data asli nanti memakai project Supabase terpisah + `pnpm db:seed --production`.
+- pnpm 12 memerlukan `ENABLE_EXPERIMENTAL_COREPACK=1` di Vercel dan keputusan eksplisit untuk setiap *build script* dependensi (`allowBuilds` di `pnpm-workspace.yaml`).
+- Uji E2E baca-saja (TKA, Fase 5, aksesibilitas) lolos terhadap situs online; jalankan dengan `E2E_BASE_URL=https://… pnpm test:e2e e2e/tka.spec.ts e2e/fase5.spec.ts e2e/a11y.spec.ts`.
+
 ### Keputusan kecil Fase 5
 - **Status Pusat Input Pekanan** (aturan lengkap di `docs/METRICS.md`): siswa yang diharapkan = siswa aktif kelas 6 (SD) / 9 (SMP) pada TA aktif. *Latihan* Lengkap bila semua siswa itu punya catatan latihan pekan tersebut. *Hasil TO* dihitung untuk TO yang dilaksanakan pekan ini atau pekan lalu; Lengkap bila semua siswa punya baris nilai (hadir/tidak hadir) dan jawaban per butir; nilai total saja = Sebagian. *Prestasi* hanya informasi dan tidak memengaruhi status, karena pekan tanpa lomba itu wajar.
 - **Nama pengunggah** untuk Manajemen/Admin Sekolah dibaca lewat fungsi `app.staff_name()` (migrasi 0006) yang hanya mengembalikan nama tampilan, bukan email/peran, dan hanya untuk pengguna aktif. RLS profil tetap: selain Super Admin hanya bisa membaca profilnya sendiri.
