@@ -26,8 +26,16 @@ public static class Trim {
 }
 "@
 
-$src = Join-Path $PSScriptRoot "..\public\brand"
-$out = Join-Path $src "web"
+$brand = Join-Path $PSScriptRoot "..\public\brand"
+# Level/master logos -> web/, per-branch logos (school/<CODE>.png) -> web/school/.
+$jobs = @(
+  @{ Src = $brand; Out = Join-Path $brand "web" },
+  @{ Src = Join-Path $brand "school"; Out = Join-Path $brand "web\school" }
+)
+
+foreach ($job in $jobs) {
+$src = $job.Src; $out = $job.Out
+if (-not (Test-Path $src)) { continue }
 New-Item -ItemType Directory -Force $out | Out-Null
 
 Get-ChildItem $src -Filter *.png | ForEach-Object {
@@ -47,4 +55,5 @@ Get-ChildItem $src -Filter *.png | ForEach-Object {
     $dst.Dispose()
     "{0}: crop {1}x{2} @({3},{4}) -> {5}x{6}" -f $_.Name, $r.Width, $r.Height, $r.X, $r.Y, $w, $TargetHeight
   } finally { $bmp.Dispose() }
+}
 }

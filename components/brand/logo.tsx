@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { SCHOOL_VISUALS, type SchoolCode } from "@/lib/brand/schools";
+import { BRANCH_LOGO_RATIO, SCHOOL_VISUALS, branchLogoPath, type SchoolCode } from "@/lib/brand/schools";
 
 /**
  * Brand PNGs trimmed of transparent padding by scripts/trim-logos.ps1
@@ -50,6 +50,38 @@ export function MasterSymbol({ size = 32, className }: { size?: number; classNam
       className={className}
       unoptimized
     />
+  );
+}
+
+/**
+ * Full branch logo (symbol + logotype incl. city) — the logo already names the
+ * school, so no separate text. Use at >= 40px height; the 4-line logotype is
+ * illegible smaller, where SchoolBadge fits instead. The symbol spans the full
+ * height, so the wrapper padding of height/3 is the mandatory clear space (§5.1).
+ */
+export function SchoolLogo({
+  code,
+  name,
+  height = 48,
+  negative = false,
+  className,
+}: {
+  code: SchoolCode;
+  name?: string;
+  height?: number;
+  negative?: boolean;
+  className?: string;
+}) {
+  return (
+    <span className={cn("inline-flex shrink-0", className)} style={{ padding: Math.ceil(height / 3) }}>
+      <Image
+        src={branchLogoPath(code, negative)}
+        alt={name ?? SCHOOL_VISUALS[code].defaultName}
+        width={Math.round(height * BRANCH_LOGO_RATIO)}
+        height={height}
+        unoptimized
+      />
+    </span>
   );
 }
 

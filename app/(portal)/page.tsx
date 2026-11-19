@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BarChart3, Trophy, Upload } from "lucide-react";
 import { DiagonalMotif } from "@/components/brand/diagonal-motif";
-import { SchoolBadge } from "@/components/brand/logo";
+import { SchoolLogo } from "@/components/brand/logo";
 import { PageHeader, TableSkeleton } from "@/components/layout/page";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { canWriteData } from "@/lib/auth/roles";
@@ -72,9 +72,10 @@ async function HomeContent() {
                 tone={s.level === "sd" ? "red" : "blue"}
                 className="absolute right-0 top-0 size-8"
               />
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-0">
                 <CardTitle className="text-sm">
-                  {isSchoolCode(s.schoolCode) ? <SchoolBadge code={s.schoolCode} name={s.name} /> : s.name}
+                  {/* The branch logo carries the school name; the -m offsets the logo's own clear space against the card padding. */}
+                  {isSchoolCode(s.schoolCode) ? <SchoolLogo code={s.schoolCode} name={s.name} className="-m-4" /> : s.name}
                 </CardTitle>
               </CardHeader>
               <CardContent>

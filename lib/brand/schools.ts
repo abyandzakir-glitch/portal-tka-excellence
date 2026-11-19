@@ -20,6 +20,16 @@ export interface SchoolVisual {
   logo: string;
 }
 
+/**
+ * Per-branch logos (symbol + logotype with the city), trimmed by
+ * scripts/trim-logos.ps1 from public/brand/school/<CODE>.png. All five are
+ * ~2.4:1 (575–578 × 240 px).
+ */
+export const BRANCH_LOGO_RATIO = 576 / 240;
+export function branchLogoPath(code: SchoolCode, negative = false): string {
+  return `/brand/web/school/${code}${negative ? "-negative-white" : ""}.png`;
+}
+
 export const SCHOOL_VISUALS: Record<SchoolCode, SchoolVisual> = {
   SDTJBDG: {
     code: "SDTJBDG",
