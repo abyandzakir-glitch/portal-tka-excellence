@@ -206,7 +206,8 @@ function EditRowDialog(props: {
 
   return (
     <Dialog open onOpenChange={(open) => (!open ? props.onClose() : undefined)}>
-      <DialogContent className="sm:max-w-lg">
+      {/* Flex column so only the field list scrolls; title and buttons stay in view on short screens. */}
+      <DialogContent className="flex flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ubah baris {props.row.rowNumber}</DialogTitle>
           <DialogDescription>
@@ -214,12 +215,13 @@ function EditRowDialog(props: {
           </DialogDescription>
         </DialogHeader>
         <form
-          className="grid gap-3"
+          className="flex min-h-0 flex-1 flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             save();
           }}
         >
+          <div className="-mx-4 grid min-h-0 gap-3 overflow-y-auto overscroll-contain px-4 pb-1">
           {props.row.issues.length ? (
             <ul className="space-y-1 rounded-md bg-muted/50 p-2 text-xs">
               {props.row.issues.map((i, k) => (
@@ -258,6 +260,7 @@ function EditRowDialog(props: {
               )}
             </div>
           ))}
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={props.onClose} disabled={pending}>Batal</Button>
             <Button type="submit" disabled={pending}>{pending ? "Menyimpan…" : "Simpan perubahan"}</Button>
