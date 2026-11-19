@@ -43,6 +43,8 @@ export const PDF_COLORS = {
   blueDark: "#1E3F7C",
   red: "#ED1C24",
   sky: "#00A7E1",
+  skyDeep: "#0079A8",
+  skyDeeper: "#005F87",
   tint: "#F3F7FC",
 } as const;
 

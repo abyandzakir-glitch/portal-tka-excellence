@@ -87,9 +87,9 @@ function Strip() {
   const h = 7;
   return (
     <Svg width={CONTENT_W} height={h} style={{ marginBottom: 10 }}>
-      <Rect x={0} y={0} width={CONTENT_W} height={h} fill={C.blue} />
-      <Polygon points={`${CONTENT_W - 150},${h} ${CONTENT_W - 135},0 ${CONTENT_W},0 ${CONTENT_W},${h}`} fill={C.blueDark} />
-      <Polygon points={`${CONTENT_W - 60},${h} ${CONTENT_W - 45},0 ${CONTENT_W},0 ${CONTENT_W},${h}`} fill={C.sky} />
+      <Rect x={0} y={0} width={CONTENT_W} height={h} fill={C.sky} />
+      <Polygon points={`${CONTENT_W - 150},${h} ${CONTENT_W - 135},0 ${CONTENT_W},0 ${CONTENT_W},${h}`} fill={C.skyDeep} />
+      <Polygon points={`${CONTENT_W - 60},${h} ${CONTENT_W - 45},0 ${CONTENT_W},0 ${CONTENT_W},${h}`} fill={C.skyDeeper} />
     </Svg>
   );
 }

@@ -23,6 +23,8 @@
   --brand-blue-tint: #e7eef7;
   --brand-sky: #00a7e1;
   --brand-sky-dark: #0082b0;
+  --brand-sky-deep: #0079a8; /* white text 4.9:1 — field under text in the sky motif */
+  --brand-sky-deeper: #005f87; /* white text 7.0:1 — motif shade */
   --brand-sky-tint: #e5f6fc;
   --brand-gray: #4d4d4f;
   --brand-gray-light: #6b6b6e; /* 5.4:1, secondary text */

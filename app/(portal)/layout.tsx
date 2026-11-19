@@ -40,7 +40,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             </Suspense>
           </div>
         </div>
-        <DiagonalMotif variant="strip" tone="blue" />
+        <DiagonalMotif variant="strip" tone="sky" />
       </header>
 
       <div className="flex flex-1">

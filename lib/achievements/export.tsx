@@ -65,7 +65,7 @@ export function achievementsXlsx(view: AchievementView, meta: ExportMeta): Uint8
 const s = StyleSheet.create({
   page: { padding: 32, fontSize: 9, fontFamily: "Albert Sans", color: "#4D4D4F" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  strip: { height: 4, backgroundColor: "#0E4E96", marginBottom: 12 },
+  strip: { height: 4, backgroundColor: "#00A7E1", marginBottom: 12 },
   title: { fontSize: 15, fontFamily: "Cabin", fontWeight: 700, color: "#0E4E96" },
   meta: { fontSize: 8.5, color: "#6B6B6E", marginTop: 2 },
   kpis: { flexDirection: "row", gap: 8, marginBottom: 12 },

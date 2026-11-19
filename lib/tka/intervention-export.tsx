@@ -49,7 +49,7 @@ export function interventionGroupsXlsx(groups: InterventionGroup[], meta: Export
 const styles = StyleSheet.create({
   page: { padding: 32, fontSize: 9, fontFamily: "Albert Sans", color: "#4D4D4F" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
-  strip: { height: 4, backgroundColor: "#0E4E96", marginBottom: 14 },
+  strip: { height: 4, backgroundColor: "#00A7E1", marginBottom: 14 },
   title: { fontSize: 15, fontFamily: "Cabin", fontWeight: 700, color: "#0E4E96" },
   meta: { fontSize: 9, color: "#6B6B6E", marginTop: 2 },
   group: { marginBottom: 12 },

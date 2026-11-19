@@ -45,7 +45,7 @@ function Delta({ current, previous, label }: { current: number; previous: number
 function Tile(props: { label: string; value: string; note: React.ReactNode; tone?: "blue" | "red" | "sky" }) {
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-white p-4">
-      <DiagonalMotif variant="corner" tone={props.tone ?? "blue"} className="absolute right-0 top-0 size-7" />
+      <DiagonalMotif variant="corner" tone={props.tone ?? "sky"} className="absolute right-0 top-0 size-7" />
       <p className="pr-6 text-sm text-brand-gray-light">{props.label}</p>
       <p className="mt-1 font-heading text-3xl font-semibold">{props.value}</p>
       <div className="mt-1 text-xs text-brand-gray-light">{props.note}</div>
