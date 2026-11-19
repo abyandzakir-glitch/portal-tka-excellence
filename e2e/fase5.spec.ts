@@ -25,14 +25,44 @@ test.skip(!PASSWORD, "SEED_DEMO_PASSWORD belum diisi di .env.local");
 test("manajemen melihat status input kelima sekolah tanpa tombol unggah", async ({ browser }) => {
   const page = await login(browser, "manajemen");
   await page.goto("/input");
-  await expect(page.getByRole("heading", { name: /Status input pekan ini/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kelengkapan per sekolah" })).toBeVisible();
   await expect(page.locator("article")).toHaveCount(5);
-  await expect(page.getByRole("heading", { name: "Unggah data baru" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Unggah data/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Unggah TO" })).toHaveCount(0);
+  // Achievements are not part of the weekly checklist.
+  await expect(page.getByRole("main").getByText(/prestasi/i)).toHaveCount(0);
   await page.screenshot({ path: "test-results/pusat-input-manajemen.png", fullPage: true });
 
-  await page.getByRole("link", { name: "← Pekan sebelumnya" }).click();
+  await page.getByRole("link", { name: "SMP", exact: true }).click();
+  await expect(page).toHaveURL(/jenjang=smp/);
+  await expect(page.locator("article")).toHaveCount(2);
+
+  await page.getByRole("link", { name: "Pekan sebelumnya" }).click();
   await expect(page).toHaveURL(/pekan=2026-11-09/);
-  await expect(page.getByRole("heading", { name: /Status input pekan/ })).toBeVisible();
+  await expect(page).toHaveURL(/jenjang=smp/);
+  await expect(page.getByRole("heading", { name: "Kelengkapan per sekolah" })).toBeVisible();
+});
+
+test("admin sekolah: menu unggah, tombol kartu, dan riwayat lengkap", async ({ browser }) => {
+  const page = await login(browser, "admin.sdtjbdg");
+  await page.goto("/input");
+  await expect(page.locator("article")).toHaveCount(1);
+  await page.screenshot({ path: "test-results/pusat-input-admin.png", fullPage: true });
+
+  await page.getByRole("button", { name: /Unggah data/ }).click();
+  const items = page.getByRole("menuitem");
+  await expect(items).toHaveCount(3);
+  await expect(items.filter({ hasText: "Prestasi" })).toHaveCount(0);
+  await page.screenshot({ path: "test-results/pusat-input-menu.png" });
+  await page.keyboard.press("Escape");
+
+  await page.locator("article").getByRole("link", { name: "Unggah Latihan" }).click();
+  await expect(page).toHaveURL(/\/input\/unggah\/latihan\?sekolah=/);
+  await expect(page.getByRole("heading", { name: "Unggah Latihan Pekanan" })).toBeVisible();
+
+  await page.goto("/input/riwayat?jenis=prestasi");
+  await expect(page.getByRole("heading", { name: "Riwayat Unggahan" })).toBeVisible();
+  await page.screenshot({ path: "test-results/riwayat-prestasi.png", fullPage: true });
 });
 
 test("manajemen mengunduh laporan PDF", async ({ browser }) => {
@@ -59,7 +89,10 @@ test("admin sekolah melihat status sekolahnya dan bagian unggah", async ({ brows
   await page.goto("/input");
   await expect(page.locator("article")).toHaveCount(1);
   await expect(page.getByRole("heading", { name: "SD Talenta Juara Bandung" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Unggah data baru" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Unggah data/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Unggah TO" })).toBeVisible();
+  // One school: no SD/SMP filter, no "Sekolah lengkap" ratio across schools needed.
+  await expect(page.getByRole("navigation", { name: "Saring jenjang" })).toHaveCount(0);
   await page.screenshot({ path: "test-results/pusat-input-admin-ponsel.png", fullPage: true });
 });
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowDownRight, ArrowUpRight, FileDown, Plus, Trophy, Upload } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, FileDown, History, Plus, Trophy, Upload } from "lucide-react";
 import { DiagonalMotif } from "@/components/brand/diagonal-motif";
 import { SchoolBadge } from "@/components/brand/logo";
 import { EmptyState, PageHeader } from "@/components/layout/page";
@@ -88,6 +88,9 @@ async function Content({ searchParams }: { searchParams: PageProps<"/prestasi">[
             </a>
             {canWriteData(user.role) ? (
               <>
+                <Link href="/input/riwayat?jenis=prestasi" className="inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-white px-2.5 text-sm text-brand-blue hover:bg-muted">
+                  <History aria-hidden="true" className="size-4" /> Riwayat unggahan
+                </Link>
                 <Link href="/input/unggah/prestasi" className="inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-white px-2.5 text-sm text-brand-blue hover:bg-muted">
                   <Upload aria-hidden="true" className="size-4" /> Unggah rekap
                 </Link>

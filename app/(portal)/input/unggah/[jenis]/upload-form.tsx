@@ -61,6 +61,8 @@ export function UploadForm(props: {
   kind: UploadKind;
   isSuperAdmin: boolean;
   ownSchool: SchoolOption | null;
+  /** School chosen when the form opens (e.g. from a school card on Input Pekanan). */
+  initialSchoolId?: string;
   schools: SchoolOption[];
   subjects: SubjectOption[];
   tryouts: TryoutOption[];
@@ -71,7 +73,7 @@ export function UploadForm(props: {
 }) {
   const { kind, isSuperAdmin, ownSchool } = props;
   const [state, action, pending] = useActionState<ActionState, FormData>(startImport, {});
-  const [schoolId, setSchoolId] = useState(ownSchool?.id ?? "");
+  const [schoolId, setSchoolId] = useState(ownSchool?.id ?? props.initialSchoolId ?? "");
   const [tryoutId, setTryoutId] = useState("");
   const [mode, setMode] = useState<"baru" | "ubah">("baru");
   const [subjectId, setSubjectId] = useState("");

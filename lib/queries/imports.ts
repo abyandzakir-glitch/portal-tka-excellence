@@ -71,7 +71,14 @@ export async function listTryouts(tx: RlsTx): Promise<TryoutOption[]> {
 
 const uploader = alias(profiles, "uploader");
 
-export function listRecentBatches(tx: RlsTx, limit = 30) {
+export type BatchKind = (typeof importBatches.type.enumValues)[number];
+/** Weekly TKA uploads shown on Input Pekanan; achievements live under the Prestasi dashboard. */
+export const TKA_BATCH_KINDS: BatchKind[] = ["tryout_blueprint", "tryout_results", "practice_logs"];
+export const ALL_BATCH_KINDS: BatchKind[] = [...TKA_BATCH_KINDS, "achievements"];
+
+export type RecentBatch = Awaited<ReturnType<typeof listRecentBatches>>[number];
+
+export function listRecentBatches(tx: RlsTx, opts: { kinds?: BatchKind[]; limit?: number } = {}) {
   return tx
     .select({
       id: importBatches.id,
@@ -82,16 +89,20 @@ export function listRecentBatches(tx: RlsTx, limit = 30) {
       errorCount: importBatches.errorCount,
       createdAt: importBatches.createdAt,
       schoolCode: schools.schoolCode,
+      schoolName: schools.name,
       tryoutName: tryouts.name,
+      tryoutLevel: tryouts.level,
+      subjectName: subjects.name,
       uploaderName: uploader.fullName,
     })
     .from(importBatches)
     .leftJoin(schools, eq(schools.id, importBatches.schoolId))
     .leftJoin(tryouts, eq(tryouts.id, importBatches.tryoutId))
+    .leftJoin(subjects, eq(subjects.id, tryouts.subjectId))
     .leftJoin(uploader, eq(uploader.id, importBatches.createdBy))
-    .where(inArray(importBatches.type, ["tryout_blueprint", "tryout_results", "practice_logs", "achievements"]))
+    .where(inArray(importBatches.type, opts.kinds ?? ALL_BATCH_KINDS))
     .orderBy(desc(importBatches.createdAt))
-    .limit(limit);
+    .limit(opts.limit ?? 30);
 }
 
 export async function getBatch(tx: RlsTx, id: string) {

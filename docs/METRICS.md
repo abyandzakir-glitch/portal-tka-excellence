@@ -117,7 +117,8 @@ Halaman Input Pekanan dan Laporan Manajemen menilai kelengkapan data setiap seko
 - **Siswa yang diharapkan** = siswa aktif kelas 6 (SD) atau kelas 9 (SMP) pada tahun ajaran aktif.
 - **Latihan pekanan**: *Lengkap* bila setiap siswa yang diharapkan punya minimal satu catatan latihan pada pekan itu; *Sebagian* bila baru sebagian; *Belum* bila belum ada.
 - **Hasil TO**: dinilai untuk setiap TO sekolah itu yang dilaksanakan **pekan ini atau pekan lalu**. *Lengkap* bila setiap siswa yang diharapkan punya baris nilai (hadir atau tidak hadir) dan siswa yang hadir punya jawaban per butir; *Sebagian* bila baru sebagian siswa, atau hanya nilai total; *Belum* bila belum ada. Pekan tanpa TO tidak dihitung.
-- **Prestasi**: hanya informasi (jumlah prestasi yang dicatat pekan itu), karena pekan tanpa lomba itu wajar.
+- **Prestasi** tidak termasuk kelengkapan pekanan (pekan tanpa lomba itu wajar); prestasi dikelola dari dashboard Prestasi.
 - **Status sekolah**: *Lengkap* bila semua yang dihitung Lengkap; *Belum* bila semuanya Belum; selain itu *Sebagian*.
+- **Ringkasan di atas kartu** (mengikuti saringan SD/SMP): *Sekolah lengkap* = jumlah sekolah berstatus Lengkap dari sekolah yang punya sesuatu untuk dinilai; *Hasil try out masuk* = baris nilai yang masuk ÷ (siswa yang diharapkan × jumlah TO yang jatuh tempo), dijumlah lintas sekolah; *Latihan pekanan masuk* = siswa yang punya catatan latihan ÷ siswa yang diharapkan.
 
 Rumus di kode: `lib/metrics/mastery.ts`, `lib/metrics/risk.ts`, `lib/metrics/tryout-kpi.ts`, `lib/metrics/recommend.ts`, `lib/metrics/achievements.ts`, `lib/metrics/input-status.ts`. Kecocokan angka dashboard dengan perhitungan manual diuji otomatis (`tests/integration/tka-metrics.test.ts`).

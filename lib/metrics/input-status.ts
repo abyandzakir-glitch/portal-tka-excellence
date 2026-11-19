@@ -10,8 +10,8 @@
  *   expected student has a score row (present or absent) and present scores
  *   carry per-item answers; Sebagian when some scores exist, or only totals
  *   were uploaded; Belum when nothing was uploaded. No try-out due → not counted.
- * - Prestasi is event-driven (a quiet week is normal), so it is shown for
- *   information only and does not affect the school's overall status.
+ * - Prestasi is event-driven (a quiet week is normal), so it is not part of
+ *   the weekly checklist; it is managed from the Prestasi dashboard.
  */
 
 export type InputStatus = "belum" | "sebagian" | "lengkap";

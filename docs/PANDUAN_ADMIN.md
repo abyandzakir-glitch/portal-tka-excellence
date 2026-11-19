@@ -17,22 +17,22 @@ Untuk **prestasi**, lihat bagian [Prestasi](#prestasi). Untuk **data siswa dan k
 Semua dilakukan di menu **Input Pekanan**.
 
 ### Status pekan ini
-Bagian atas halaman **Input Pekanan** menampilkan kartu sekolah Anda untuk pekan berjalan (Senin–Minggu):
+Halaman **Input Pekanan** menampilkan kartu sekolah Anda untuk pekan berjalan (Senin–Minggu): berapa siswa yang hasil TO-nya sudah masuk per mapel, dan berapa yang sudah punya catatan latihan. Statusnya:
 
 | Status | Arti |
 |---|---|
 | **Lengkap** | Latihan pekanan semua siswa kelas 6 (SD) / kelas 9 (SMP) sudah masuk, dan hasil TO yang dilaksanakan pekan ini atau pekan lalu sudah diunggah lengkap per butir soal. |
-| **Sebagian** | Sebagian sudah masuk. Kartu menunjukkan yang kurang, misalnya "58 dari 60 siswa punya catatan latihan" atau "nilai total saja". |
+| **Sebagian** | Sebagian sudah masuk. Kartu menunjukkan yang kurang, misalnya "Latihan pekanan 58 / 60" atau "nilai total saja". |
 | **Belum** | Belum ada data pekan ini. |
 
-Prestasi hanya ditampilkan sebagai informasi (pekan tanpa lomba itu wajar) dan tidak memengaruhi status. Manajemen yayasan melihat kartu kelima sekolah, jadi usahakan status **Lengkap** sebelum akhir pekan. Gunakan **← Pekan sebelumnya** untuk melihat pekan lalu.
+Prestasi tidak termasuk di sini (pekan tanpa lomba itu wajar); prestasi diunggah dari menu **Prestasi**. Manajemen yayasan melihat kartu kelima sekolah, jadi usahakan status **Lengkap** sebelum akhir pekan. Gunakan tombol **‹ ›** di samping tanggal pekan (kanan atas) untuk melihat pekan lain.
 
 ---
 
 ## Langkah umum (berlaku untuk semua jenis data)
 
 ### 1. Pilih jenis data
-Buka **Input Pekanan**, lalu klik kartu *Hasil Try Out*, *Latihan Pekanan*, atau *Kisi-kisi Try Out*.
+Buka **Input Pekanan**, klik tombol **Unggah data** (kanan atas), lalu pilih *Hasil Try Out*, *Latihan Pekanan*, atau *Kisi-kisi Try Out*. Bisa juga lewat tombol **Unggah TO** / **Unggah Latihan** di kartu sekolah; sekolahnya langsung terpilih.
 
 ### 2. Isi pilihan dan unduh template
 Isi pilihan di bagian **1. Pilih data** (misalnya try out mana). Tautan **Unduh template** lalu muncul di bagian **2. Siapkan file**.
@@ -74,7 +74,7 @@ Kalau ada baris *Perlu dicek*, centang **Saya sudah memeriksa …**, lalu klik *
 Kalau Anda batal, klik **Hapus draf**. Tidak ada data yang berubah.
 
 ### 7. Riwayat
-Semua unggahan tercatat di **Riwayat unggahan** pada halaman Input Pekanan, lengkap dengan status, pengunggah, dan file aslinya.
+Lima unggahan TKA terakhir tampil di **Riwayat unggahan** di bawah halaman Input Pekanan. Klik **Lihat semua** untuk daftar lengkap (termasuk unggahan prestasi), dengan status, pengunggah, dan nama file aslinya.
 
 ---
 
@@ -109,7 +109,7 @@ Ada tiga cara memasukkan prestasi:
 
 | Cara | Cocok untuk |
 |---|---|
-| **Unggah rekap** (Input Pekanan → Prestasi) | Banyak prestasi sekaligus, dalam format apa pun |
+| **Unggah rekap** (Prestasi → Unggah rekap) | Banyak prestasi sekaligus, dalam format apa pun |
 | **Tempel teks** (di halaman yang sama) | Rekap dari WhatsApp, atau tabel yang disalin dari Excel |
 | **Tambah prestasi** (Prestasi → Tambah prestasi) | Satu prestasi, atau mengoreksi satu data |
 

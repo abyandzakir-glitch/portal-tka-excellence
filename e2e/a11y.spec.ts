@@ -72,6 +72,8 @@ const PAGES: [role: string, path: string][] = [
   ["superadmin", "/tka/intervensi?sekolah=SDTJBDG"],
   ["admin.sdtjbdg", "/input/unggah/hasil"],
   ["admin.sdtjbdg", "/input/unggah/prestasi"],
+  ["admin.sdtjbdg", "/input"],
+  ["admin.sdtjbdg", "/input/riwayat"],
   ["admin.sdtjbdg", "/prestasi/tambah"],
   ["admin.sdtjbdg", "/master/kelas"],
 ];

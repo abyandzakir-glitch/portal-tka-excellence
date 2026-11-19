@@ -56,7 +56,7 @@ test("admin sekolah mengunggah file latihan berantakan, menyimpan, lalu Super Ad
   await expect(admin.getByRole("button", { name: "Batalkan unggahan ini" })).toHaveCount(0);
 
   // History lists the upload.
-  await admin.goto("/input");
+  await admin.goto("/input/riwayat");
   await expect(admin.getByRole("cell", { name: "latihan-SDTJBDG_berantakan.xlsx" }).first()).toBeVisible();
 
   // Super Admin rolls the upload back.

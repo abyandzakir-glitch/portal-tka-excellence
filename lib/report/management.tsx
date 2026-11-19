@@ -258,24 +258,22 @@ export async function managementPdf(r: ManagementReport, meta: { generatedAt: st
         <View wrap={false}>
           <Text style={s.h2}>3. Kelengkapan input {formatWeek(r.input.weekStart)}</Text>
           <View style={[s.row, s.th]}>
-            <Text style={{ width: "34%" }}>Sekolah</Text>
-            <Text style={{ width: "22%" }}>Hasil TO</Text>
-            <Text style={{ width: "22%" }}>Latihan pekanan</Text>
-            <Text style={{ width: "10%", textAlign: "right" }}>Prestasi</Text>
+            <Text style={{ width: "36%" }}>Sekolah</Text>
+            <Text style={{ width: "26%" }}>Hasil TO</Text>
+            <Text style={{ width: "26%" }}>Latihan pekanan</Text>
             <Text style={{ width: "12%", textAlign: "right" }}>Status</Text>
           </View>
           {r.input.schools.map((sc) => (
             <View key={sc.schoolId} style={s.row}>
-              <Text style={{ width: "34%" }}>{sc.name}</Text>
-              <Text style={{ width: "22%" }}>
+              <Text style={{ width: "36%" }}>{sc.name}</Text>
+              <Text style={{ width: "26%" }}>
                 {sc.tryouts.length === 0 ? "Tidak ada TO" : sc.tryouts.map((t) => `${INPUT_STATUS_LABEL[t.status]}`).join(" / ")}
               </Text>
-              <Text style={{ width: "22%" }}>{INPUT_STATUS_LABEL[sc.practice.status]} ({formatNumber(sc.practice.students)}/{formatNumber(sc.expected)})</Text>
-              <Text style={{ width: "10%", textAlign: "right" }}>{formatNumber(sc.achievements.count)}</Text>
+              <Text style={{ width: "26%" }}>{INPUT_STATUS_LABEL[sc.practice.status]} ({formatNumber(sc.practice.students)}/{formatNumber(sc.expected)})</Text>
               <Text style={{ width: "12%", textAlign: "right", ...F.bodyBold }}>{statusText(sc.overall)}</Text>
             </View>
           ))}
-          <Text style={s.note}>Lengkap = latihan semua siswa kelas 6/9 dan hasil TO (pekan ini atau pekan lalu, per butir) sudah masuk. Prestasi hanya informasi.</Text>
+          <Text style={s.note}>Lengkap = latihan semua siswa kelas 6/9 dan hasil TO (pekan ini atau pekan lalu, per butir) sudah masuk.</Text>
         </View>
 
         <View style={s.footer} fixed>
