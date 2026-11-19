@@ -14,7 +14,7 @@ import { Roster, type CompetencyRef } from "@/lib/import/lookup";
 import { missingRequired } from "@/lib/import/mapping";
 import { buildRowInputs, detectLayout, fieldSetFor, type TkaImportKind } from "@/lib/import/pipeline";
 import { readTabularFile, type Cell } from "@/lib/import/sheet";
-import { BLUEPRINT_FIELDS, validateBlueprint } from "@/lib/import/tka/blueprint";
+import { BLUEPRINT_FIELDS, normalizeCognitiveLevel, validateBlueprint } from "@/lib/import/tka/blueprint";
 import { validatePractice } from "@/lib/import/tka/practice";
 import { validateResults, type ResultsItem } from "@/lib/import/tka/results";
 import { buildBlueprintTemplate, buildPracticeTemplate, buildResultsTemplate } from "@/lib/import/templates/tka";
@@ -79,6 +79,20 @@ const m = (n: number) => MAT_COMPS[n]!;
 // ---------------------------------------------------------------------------
 // 1. Kisi-kisi
 // ---------------------------------------------------------------------------
+describe("level kognitif Matematika SD", () => {
+  const SD = COGNITIVE_LEVELS.sd.MAT;
+  it.each([
+    ["Level 1 — Pengetahuan dan Pemahaman", "Level 1 — Pengetahuan dan Pemahaman"],
+    ["Level 2 - Aplikasi", "Level 2 — Aplikasi"],
+    ["L3", "Level 3 — Penalaran"],
+    ["2", "Level 2 — Aplikasi"],
+    ["aplikasi", "Level 2 — Aplikasi"],
+    ["Penalaran", "Penalaran"],
+    ["Pemecahan masalah", "Pemecahan masalah matematis"],
+    ["koneksi matematis", "Koneksi matematis"],
+  ])("%s -> %s", (input, expected) => expect(normalizeCognitiveLevel(input, SD)).toBe(expected));
+});
+
 describe("impor kisi-kisi TO: template vs file berantakan", () => {
   const ctx = {
     subject: SUBJECT_REFS[0]!,
