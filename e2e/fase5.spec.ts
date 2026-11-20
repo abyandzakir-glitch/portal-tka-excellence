@@ -84,6 +84,25 @@ test("admin sekolah tidak bisa membuka laporan manajemen", async ({ browser }) =
   await expect(page).toHaveURL(/tidak-diizinkan/);
 });
 
+test("prestasi per tahun kalender; unggah prestasi kembali ke Input Pekanan", async ({ browser }) => {
+  const page = await login(browser, "admin.sdtjbdg");
+  await page.goto("/prestasi");
+  await expect(page.getByLabel("Tahun", { exact: true })).toHaveValue("2026");
+  await expect(page.getByLabel("Tahun ajaran")).toHaveCount(0);
+  await expect(page.getByText(/Menampilkan data: Tahun 2026/)).toBeVisible();
+  await page.screenshot({ path: "test-results/prestasi-tahun.png" });
+
+  await page.getByLabel("Periode").selectOption("bulan");
+  await expect(page).toHaveURL(/periode=bulan/);
+  await page.getByLabel("Bulan", { exact: true }).selectOption("10");
+  await expect(page).toHaveURL(/bulan=2026-10/);
+  await expect(page.getByText(/Menampilkan data: Oktober 2026/)).toBeVisible();
+
+  await page.goto("/input/unggah/prestasi");
+  await page.getByRole("link", { name: "← Input Pekanan" }).click();
+  await expect(page).toHaveURL(/\/input$/);
+});
+
 test("admin sekolah melihat status sekolahnya dan bagian unggah", async ({ browser }) => {
   const page = await login(browser, "admin.sdtjbdg", 390);
   await page.goto("/input");

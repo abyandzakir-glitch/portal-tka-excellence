@@ -7,16 +7,14 @@ import { SchoolBadge } from "@/components/brand/logo";
 import { EmptyState, PageHeader } from "@/components/layout/page";
 import { CategoryBars, SchoolLevelBars, SplitBar, TrendChart } from "@/components/prestasi/charts";
 import { AchievementFilterBar } from "@/components/prestasi/filter-bar";
+import { AchievementPeriodBar } from "@/components/prestasi/period-bar";
 import { ChartCard, MiniTable } from "@/components/tka/chart-card";
-import { FilterBar } from "@/components/tka/filter-bar";
 import { DashboardSkeleton } from "@/components/tka/skeleton";
 import { canWriteData } from "@/lib/auth/roles";
-import { requireUser } from "@/lib/auth/session";
 import { isSchoolCode } from "@/lib/brand/schools";
 import { CATEGORIES, CATEGORY_LABEL, LEVEL_LABEL, LEVELS, RANK_LABEL } from "@/lib/achievements/labels";
-import { loadAchievementView, parseAchievementFilters } from "@/lib/achievements/load";
-import { formatDate, formatNumber, formatPercent } from "@/lib/format/id";
-import { withTka } from "@/lib/tka/page";
+import { loadAchievementPage } from "@/lib/achievements/page";
+import { formatDate, formatNumber, formatPercent, todayIso } from "@/lib/format/id";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Prestasi" };
@@ -54,14 +52,8 @@ function Tile(props: { label: string; value: string; note: React.ReactNode; tone
 }
 
 async function Content({ searchParams }: { searchParams: PageProps<"/prestasi">["searchParams"] }) {
-  const user = await requireUser();
   const raw = await searchParams;
-  const f = parseAchievementFilters(raw);
-  const { ctx, data, isNetwork } = await withTka(raw, async (tx, c) => {
-    const code = user.schoolCode ?? c.filters.sekolah ?? null;
-    const school = code ? (c.schools.find((s) => s.code === code) ?? null) : null;
-    return { school, view: await loadAchievementView(tx, c, f, school?.id ?? null) };
-  });
+  const { user, ctx, data, isNetwork, period } = await loadAchievementPage(raw);
   const { view, school } = data;
   const qs = new URLSearchParams(Object.entries(raw).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : []))).toString();
   const listHref = (extra: Record<string, string>) => {
@@ -102,13 +94,14 @@ async function Content({ searchParams }: { searchParams: PageProps<"/prestasi">[
           </>
         }
       />
-      <FilterBar
-        years={ctx.years}
+      <AchievementPeriodBar
+        years={data.years}
+        currentYear={period.year}
+        defaultYear={Number(todayIso().slice(0, 4))}
+        preset={period.preset}
+        month={period.month}
         schools={isNetwork ? ctx.schools.map((s) => ({ code: s.code, name: s.name })) : undefined}
         currentSchool={school?.code ?? null}
-        showSubject={false}
-        schoolParam
-        allSchoolsOption
         periodLabel={`${view.period.label} · dibandingkan ${formatDate(view.previous.start)} – ${formatDate(view.previous.end)}`}
       />
       <AchievementFilterBar />

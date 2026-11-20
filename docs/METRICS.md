@@ -86,6 +86,8 @@ Kompetensi yang penguasaannya rendah **dan** sering diujikan muncul paling atas.
 
 ## Prestasi
 
+Dashboard Prestasi memakai **tahun kalender** (Januari–Desember), bukan tahun ajaran. Bawaannya tahun berjalan; bisa dipersempit ke satu bulan, satu pekan, atau rentang tanggal bebas. Pembanding "tahun lalu" adalah tanggal yang sama setahun sebelumnya (mis. Tahun 2026 dibandingkan 1 Jan–31 Des 2025). Bagian prestasi di Laporan Manajemen tetap mengikuti periode laporan (tahun ajaran).
+
 | Angka | Cara menghitung |
 |---|---|
 | **Total prestasi** | Jumlah prestasi dengan tanggal prestasi (bukan tanggal input) di dalam periode terpilih. |

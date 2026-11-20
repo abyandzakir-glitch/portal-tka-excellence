@@ -4,13 +4,11 @@ import { Suspense } from "react";
 import { Pencil, Trophy } from "lucide-react";
 import { EmptyState, PageHeader, TableSkeleton } from "@/components/layout/page";
 import { AchievementFilterBar } from "@/components/prestasi/filter-bar";
-import { FilterBar } from "@/components/tka/filter-bar";
+import { AchievementPeriodBar } from "@/components/prestasi/period-bar";
 import { canWriteData } from "@/lib/auth/roles";
-import { requireUser } from "@/lib/auth/session";
 import { CATEGORY_LABEL, LEVEL_LABEL, RANK_LABEL } from "@/lib/achievements/labels";
-import { loadAchievementView, parseAchievementFilters } from "@/lib/achievements/load";
-import { formatDate, formatNumber } from "@/lib/format/id";
-import { withTka } from "@/lib/tka/page";
+import { loadAchievementPage } from "@/lib/achievements/page";
+import { formatDate, formatNumber, todayIso } from "@/lib/format/id";
 
 export const metadata: Metadata = { title: "Daftar Prestasi" };
 
@@ -29,27 +27,22 @@ export default function AchievementListPage(props: PageProps<"/prestasi/daftar">
 }
 
 async function Content({ searchParams }: { searchParams: PageProps<"/prestasi/daftar">["searchParams"] }) {
-  const user = await requireUser();
   const raw = await searchParams;
-  const f = parseAchievementFilters(raw);
-  const { ctx, data, isNetwork } = await withTka(raw, async (tx, c) => {
-    const code = user.schoolCode ?? c.filters.sekolah ?? null;
-    const school = code ? (c.schools.find((s) => s.code === code) ?? null) : null;
-    return { school, view: await loadAchievementView(tx, c, f, school?.id ?? null) };
-  });
+  const { user, ctx, data, isNetwork, period } = await loadAchievementPage(raw);
   const code = (id: string) => ctx.schools.find((s) => s.id === id)?.code ?? "";
   const canEdit = canWriteData(user.role);
   const rows = data.view.records;
 
   return (
     <div className="space-y-4">
-      <FilterBar
-        years={ctx.years}
+      <AchievementPeriodBar
+        years={data.years}
+        currentYear={period.year}
+        defaultYear={Number(todayIso().slice(0, 4))}
+        preset={period.preset}
+        month={period.month}
         schools={isNetwork ? ctx.schools.map((s) => ({ code: s.code, name: s.name })) : undefined}
         currentSchool={data.school?.code ?? null}
-        showSubject={false}
-        schoolParam
-        allSchoolsOption
         periodLabel={data.view.period.label}
       />
       <AchievementFilterBar />

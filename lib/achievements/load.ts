@@ -25,7 +25,7 @@ import type { TkaContext } from "@/lib/tka/load";
 import { CATEGORIES, LEVELS, RANKS, type Category, type Level, type Rank } from "./labels";
 
 // ---------------------------------------------------------------------------
-// Filters (in the URL, next to the shared ta/periode/sekolah filters)
+// Filters (in the URL, next to the tahun/periode/sekolah filters)
 // ---------------------------------------------------------------------------
 
 const dim = <T extends readonly string[]>(values: T) => z.enum(values).optional().catch(undefined);
@@ -151,7 +151,23 @@ export interface AchievementView {
   records: (AchievementRecord & { points: number })[];
 }
 
-export async function loadAchievementView(tx: RlsTx, ctx: TkaContext, f: AchievementFilters, schoolId: string | null): Promise<AchievementView> {
+/** Years (calendar) that have at least one achievement visible to the user. */
+export async function listAchievementYears(tx: RlsTx): Promise<number[]> {
+  const rows = await tx.execute<{ y: number }>(sql`select distinct extract(year from achieved_on)::int as y from public.achievements`);
+  return rows.map((r) => Number(r.y));
+}
+
+/**
+ * The dashboard passes the calendar-year period (lib/achievements/period.ts);
+ * the management report passes its TKA context, so its numbers follow the
+ * report's academic-year period.
+ */
+export interface AchievementScope {
+  period: { start: string; end: string; asOf: string; label: string };
+  schools: Pick<TkaContext["schools"][number], "id" | "code" | "name">[];
+}
+
+export async function loadAchievementView(tx: RlsTx, ctx: AchievementScope, f: AchievementFilters, schoolId: string | null): Promise<AchievementView> {
   const { start, end } = ctx.period;
   const prev = previousYearRange(start, end);
   const [{ weights, academicGroup }, current, previous] = await Promise.all([

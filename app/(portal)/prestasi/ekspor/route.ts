@@ -1,21 +1,13 @@
 import type { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth/session";
 import { CATEGORY_LABEL, LEVEL_LABEL, RANK_LABEL } from "@/lib/achievements/labels";
 import { achievementsPdf, achievementsXlsx } from "@/lib/achievements/export";
-import { loadAchievementView, parseAchievementFilters } from "@/lib/achievements/load";
+import { loadAchievementPage } from "@/lib/achievements/page";
 import { formatDateTimeId } from "@/lib/tka/datetime";
-import { withTka } from "@/lib/tka/page";
 
 /** Management report export (§8.2): Excel and PDF, RLS-scoped, same filters as the dashboard. */
 export async function GET(req: NextRequest) {
-  const user = await requireUser();
   const raw = Object.fromEntries(req.nextUrl.searchParams.entries());
-  const f = parseAchievementFilters(raw);
-  const { ctx, data } = await withTka(raw, async (tx, c) => {
-    const code = user.schoolCode ?? c.filters.sekolah ?? null;
-    const school = code ? (c.schools.find((s) => s.code === code) ?? null) : null;
-    return { school, view: await loadAchievementView(tx, c, f, school?.id ?? null) };
-  });
+  const { f, ctx, data } = await loadAchievementPage(raw);
   const filterLabel = [
     f.tingkat ? `Tingkat: ${f.tingkat === "KOSONG" ? "tidak diketahui" : LEVEL_LABEL[f.tingkat]}` : null,
     f.kategori ? `Kategori: ${f.kategori === "KOSONG" ? "belum dikategorikan" : CATEGORY_LABEL[f.kategori]}` : null,

@@ -54,9 +54,8 @@ export default function UploadPage(props: PageProps<"/input/unggah/[jenis]">) {
   );
 }
 
-/** Where "back" goes: achievements are uploaded from the Prestasi dashboard, students from Master Data. */
+/** Where "back" goes: student import is opened from Master Data; every other upload returns to Input Pekanan. */
 const BACK: Partial<Record<UploadKind, { href: string; label: string }>> = {
-  prestasi: { href: "/prestasi", label: "Prestasi" },
   siswa: { href: "/master/siswa", label: "Siswa" },
 };
 
