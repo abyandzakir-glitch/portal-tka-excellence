@@ -39,6 +39,7 @@ export const NAV: NavSection[] = [
       { href: "/master/siswa", label: "Siswa", icon: "users" },
       { href: "/master/mapel", label: "Mata Pelajaran", icon: "book" },
       { href: "/master/kompetensi", label: "Kompetensi", icon: "tree" },
+      { href: "/master/try-out", label: "Try Out", icon: "clipboard", roles: SUPER },
     ],
   },
   {

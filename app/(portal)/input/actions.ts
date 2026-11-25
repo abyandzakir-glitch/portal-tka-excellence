@@ -20,6 +20,7 @@ import { ACCEPTED_EXTENSIONS, fileExtension, MAX_FILE_BYTES, readTabularFile, ty
 import { SETTING_KEYS } from "@/lib/settings/defaults";
 import { parseWeekStart } from "@/lib/import/values";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { assertTryoutNameFree } from "@/lib/tka/tryouts";
 
 export interface ActionState {
   error?: string;
@@ -109,6 +110,8 @@ export async function startImport(_prev: ActionState, formData: FormData): Promi
         if (!input.mapel) throw new ImportError("Pilih mapel try out.");
         const [subject] = await tx.select().from(subjects).where(eq(subjects.id, input.mapel)).limit(1);
         if (!subject) throw new ImportError("Mapel tidak ditemukan.");
+        // One TO per name: a blueprint for an existing TO updates it instead of creating a twin.
+        await assertTryoutNameFree(tx, { name, subjectId: subject.id, date });
         const levelSchools = await tx.select({ id: schools.id }).from(schools).where(eq(schools.level, subject.level));
         let schoolIds: string[];
         if (ownSchool) {

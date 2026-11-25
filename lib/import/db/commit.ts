@@ -40,6 +40,7 @@ import { headerSignature } from "../mapping";
 import type { BlueprintItem } from "../tka/blueprint";
 import type { PracticeRow } from "../tka/practice";
 import type { ResultRow } from "../tka/results";
+import { academicYearFor, assertTryoutNameFree } from "@/lib/tka/tryouts";
 import { ImportError, type BatchConfig } from "./config";
 import { loadBatch, stageBatch, type ImportBatchRow } from "./stage";
 
@@ -99,18 +100,15 @@ async function commitBlueprint(tx: RlsTx, batch: ImportBatchRow, config: BatchCo
 
   if (opts.newTryout) {
     const t = opts.newTryout;
-    const [year] = await tx
-      .select({ id: academicYears.id })
-      .from(academicYears)
-      .where(and(sql`${academicYears.startDate} <= ${t.date}`, sql`${academicYears.endDate} >= ${t.date}`))
-      .limit(1);
-    if (!year) throw new ImportError("Tanggal TO berada di luar tahun ajaran yang terdaftar. Tambahkan tahun ajarannya dulu di Master Data.");
+    // Checked again here: another school may have created the same TO since this draft was made.
+    await assertTryoutNameFree(tx, t);
+    const yearId = await academicYearFor(tx, t.date);
     const [created] = await tx
       .insert(tryouts)
       .values({
         name: t.name,
         date: t.date,
-        academicYearId: year.id,
+        academicYearId: yearId,
         level: t.level,
         subjectId: t.subjectId,
         ownerSchoolId: t.ownerSchoolId,
@@ -484,6 +482,9 @@ export async function rollbackBatch(tx: RlsTx, batchId: string, userId: string):
       break;
     }
     case "tryout_blueprint": {
+      if (snapshot.mergedInto) {
+        throw new ImportError("TO dari kisi-kisi ini sudah digabung ke TO jaringan, jadi unggahan ini tidak bisa dibatalkan sendiri. Ubah kisi-kisinya lewat \"Perbarui kisi-kisi TO yang ada\".");
+      }
       const createdTryoutId = snapshot.createdTryoutId as string | undefined;
       if (createdTryoutId) {
         const [{ n }] = await tx.execute<{ n: number }>(

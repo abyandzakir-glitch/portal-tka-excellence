@@ -57,6 +57,13 @@
       "when": 1795009975882,
       "tag": "0007_explicit_table_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795573711978,
+      "tag": "0008_tryout_name_lookup",
+      "breakpoints": true
     }
   ]
 }

@@ -16,6 +16,7 @@ import * as schema from "../../lib/db/schema";
 import type { RlsTx } from "../../lib/db/rls";
 import { commitBatch, rollbackBatch } from "../../lib/import/db/commit";
 import { createDraftBatch } from "../../lib/import/db/create";
+import { mergeTryouts } from "../../lib/tka/tryouts";
 import type { BatchOptions } from "../../lib/import/db/config";
 import type { TkaImportKind } from "../../lib/import/pipeline";
 import { readTabularFile, type Cell } from "../../lib/import/sheet";
@@ -243,7 +244,51 @@ async function main() {
 
   const r1 = await upload(adminBdg, "tryout_results", SDTJBDG, [["NIS", "1", "2", "3", "4", "5"], [roster[0]!.nis, "A", "B", "C", "D", "A"]], { tryoutId: bpResult.tryoutId });
   await asUser(adminBdg, (tx) => commitBatch(tx, r1.id, adminBdg, { confirmReplace: true }));
-  const blocked = await expectError(() => asUser(superAdmin, (tx) => rollbackBatch(tx, bp.id, superAdmin)));
+
+  console.log("\nSatu TO per nama: tolak TO kembar, gabungkan yang terlanjur kembar");
+  const tryNewTo = async (name: string) => {
+    const d = await upload(adminBdg, "tryout_blueprint", SDTJBDG, blueprintRows, { newTryout: { ...newTo, name } });
+    return expectError(() => asUser(adminBdg, (tx) => commitBatch(tx, d.id, adminBdg)));
+  };
+  const again = await tryNewTo("  to internal   UJI ");
+  check("nama TO yang sama (beda huruf/spasi) ditolak", again !== null && /sudah ada/.test(again), again ?? "berhasil");
+  // A twin created by another school before this rule existed (written directly, as old data would be).
+  const SDTJCMH = school("SDTJCMH");
+  const [twin] = await client<{ id: string }[]>`
+    insert into public.tryouts (name, date, academic_year_id, level, subject_id, owner_school_id)
+    select name, '2026-11-12', academic_year_id, level, subject_id, ${SDTJCMH} from public.tryouts where id = ${bpResult.tryoutId}
+    returning id`;
+  await client`insert into public.tryout_schools (tryout_id, school_id) values (${twin!.id}, ${SDTJCMH})`;
+  await client`insert into public.tryout_items (tryout_id, number, competency_id, cognitive_level, difficulty, answer_key, is_voided)
+    select ${twin!.id}, number, competency_id, cognitive_level, difficulty, answer_key, is_voided from public.tryout_items where tryout_id = ${bpResult.tryoutId}`;
+  await client`update public.tryouts set name = 'TO Uji Sekolah Lain' where id = ${twin!.id}`;
+  // Admin SDTJBDG cannot see SDTJCMH's TO (RLS); the lookup still finds it.
+  const hidden = await tryNewTo("TO Uji Sekolah Lain");
+  check("nama TO milik sekolah lain (tak terlihat) juga ditolak", hidden !== null && /sekolah lain atau yayasan/.test(hidden), hidden ?? "berhasil");
+  await client`update public.tryouts set name = 'TO Internal Uji' where id = ${twin!.id}`;
+
+  const cmhStudent = await one(client<{ nis: string }[]>`select nis from public.students where school_id = ${SDTJCMH} order by nis limit 1`);
+  const rc = await upload(superAdmin, "tryout_results", SDTJCMH, [["NIS", "1", "2", "3", "4", "5"], [cmhStudent.nis, "A", "A", "A", "A", "A"]], { tryoutId: twin!.id });
+  await asUser(superAdmin, (tx) => commitBatch(tx, rc.id, superAdmin));
+  const merged = await asUser(superAdmin, (tx) => mergeTryouts(tx, [twin!.id, bpResult.tryoutId!]));
+  check("TO paling awal dipertahankan", merged.keptId === bpResult.tryoutId && merged.removed === 1 && merged.movedScores === 1, JSON.stringify(merged));
+  const after = await one(client<{ tos: number; owner: string | null; schools: number; scores: number; foreign: number; batch: string }[]>`
+    select (select count(*)::int from public.tryouts where name = 'TO Internal Uji') as tos,
+           (select owner_school_id from public.tryouts where id = ${bpResult.tryoutId}) as owner,
+           (select count(*)::int from public.tryout_schools where tryout_id = ${bpResult.tryoutId}) as schools,
+           (select count(*)::int from public.tryout_scores where tryout_id = ${bpResult.tryoutId}) as scores,
+           (select count(*)::int from public.item_responses r join public.tryout_items i on i.id = r.item_id
+             where r.tryout_id = ${bpResult.tryoutId} and i.tryout_id <> ${bpResult.tryoutId}) as foreign,
+           (select tryout_id::text from public.import_batches where id = ${rc.id}) as batch`);
+  check("satu TO jaringan dengan dua sekolah peserta dan nilai keduanya", after.tos === 1 && after.owner === null && after.schools === 2 && after.scores === 2, JSON.stringify(after));
+  check("jawaban per soal menunjuk butir TO yang dipertahankan; riwayat unggahan ikut pindah", after.foreign === 0 && after.batch === bpResult.tryoutId);
+  await asUser(superAdmin, (tx) => rollbackBatch(tx, rc.id, superAdmin));
+  const cmhLeft = await one(client<{ n: number }[]>`select count(*)::int as n from public.tryout_scores where tryout_id = ${bpResult.tryoutId} and school_id = ${SDTJCMH}`);
+  check("unggahan hasil dari TO kembar tetap bisa dibatalkan setelah digabung", cmhLeft.n === 0);
+  const notSame = await expectError(() => asUser(superAdmin, (tx) => mergeTryouts(tx, [bpResult.tryoutId!, to4!.id])));
+  check("TO dengan nama/kisi berbeda tidak bisa digabung", notSame !== null && /berbeda/.test(notSame), notSame ?? "berhasil");
+
+  const blocked =await expectError(() => asUser(superAdmin, (tx) => rollbackBatch(tx, bp.id, superAdmin)));
   check("kisi-kisi TO yang sudah punya hasil tidak bisa dibatalkan", blocked !== null && /sudah punya hasil/.test(blocked), blocked ?? "berhasil");
   await asUser(superAdmin, (tx) => rollbackBatch(tx, r1.id, superAdmin));
   await asUser(superAdmin, (tx) => rollbackBatch(tx, bp.id, superAdmin));

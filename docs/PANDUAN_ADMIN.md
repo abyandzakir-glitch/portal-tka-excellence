@@ -101,6 +101,8 @@ Lima unggahan TKA terakhir tampil di **Riwayat unggahan** di bawah halaman Input
 - **Kunci jawaban** boleh kosong kalau hasil TO nanti diunggah dalam format 1/0.
 - Soal yang **dibatalkan** (dianulir): isi "Ya" di kolom Dianulir. Soal itu tidak dihitung dalam nilai maupun penguasaan kompetensi.
 - Kunci jawaban yang diralat atau soal yang dianulir **setelah** hasil TO diunggah: pilih **Perbarui kisi-kisi try out yang sudah ada**. Nilai siswa akan dihitung ulang secara otomatis.
+- **Satu TO, satu nama.** TO bersama (mis. paket dari yayasan) cukup dibuat **sekali** oleh Super Admin dengan semua sekolah pesertanya. Sekolah tidak perlu mengunggah kisi-kisinya lagi: langsung pilih TO itu di **Unggah Hasil TO**. Portal menolak membuat TO baru bila nama yang sama (huruf besar/kecil dan spasi diabaikan) sudah ada untuk mapel dan tahun ajaran itu, termasuk TO milik sekolah lain. Bila sekolah Anda belum terdaftar sebagai peserta, minta Super Admin menambahkannya.
+- **Untuk Super Admin:** menu **Master Data → Try Out** menampilkan semua TO, mengatur sekolah peserta, dan menandai **TO kembar** (dibuat terpisah sebelum aturan ini). Tombol **Gabungkan** menyatukannya menjadi satu TO jaringan: nilai, jawaban per soal, dan riwayat unggahan semua sekolah dipindahkan ke TO yang paling awal. Penggabungan hanya bisa dilakukan bila kisi-kisinya sama persis dan tidak ada siswa yang punya hasil di dua TO kembar tersebut.
 
 ---
 

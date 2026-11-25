@@ -15,7 +15,7 @@ import { BarChart3,
   Trophy,
   Upload,
   Users,
-  type LucideIcon, FileText } from "lucide-react";
+  type LucideIcon, FileText, ClipboardList } from "lucide-react";
 import type { NavSection } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +34,7 @@ const ICONS: Record<string, LucideIcon> = {
   shield: ShieldCheck,
   history: History,
   file: FileText,
+  clipboard: ClipboardList,
 };
 
 function isActive(pathname: string, href: string) {
