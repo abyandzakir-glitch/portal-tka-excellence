@@ -71,6 +71,13 @@
       "when": 1795597689507,
       "tag": "0009_tryout_school_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795598344856,
+      "tag": "0010_tryout_school_dates_repair",
+      "breakpoints": true
     }
   ]
 }
