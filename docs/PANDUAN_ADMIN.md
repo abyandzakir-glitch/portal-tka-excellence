@@ -84,7 +84,8 @@ Lima unggahan TKA terakhir tampil di **Riwayat unggahan** di bawah halaman Input
 - Soal yang **tidak dijawab**: biarkan kosong. Soal itu dihitung salah.
 - Siswa yang **tidak ikut** TO: kosongkan semua jawabannya, atau isi kolom Kehadiran dengan "Tidak Hadir".
 - Kalau Anda **hanya punya nilai total**, buat kolom "Nilai" tanpa kolom nomor soal. Nilai tetap masuk ke grafik perkembangan, tetapi tidak bisa dipakai untuk melihat kompetensi mana yang lemah.
-- **Mengunggah ulang** hasil untuk TO yang sama (misalnya untuk koreksi) akan **menggantikan** seluruh data hasil TO itu untuk sekolah Anda. Data lama tetap tersimpan sebagai cadangan dan bisa dipulihkan oleh Super Admin.
+- **Boleh diunggah per kelas.** Misalnya unggah file kelas 6A, lalu file kelas 6B untuk TO yang sama: hasil 6B **ditambahkan**, hasil 6A tetap ada.
+- **Mengunggah ulang** untuk koreksi hanya mengganti hasil **siswa yang ada di file baru**. Pratinjau menyebutkan berapa siswa (dan siapa saja) yang sudah punya hasil. Anda harus mencentang kotak konfirmasi penggantian sebelum tombol Simpan bisa ditekan. Data lama tetap tersimpan sebagai cadangan dan bisa dipulihkan oleh Super Admin.
 
 ## Latihan Pekanan
 

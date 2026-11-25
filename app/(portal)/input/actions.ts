@@ -252,12 +252,12 @@ export async function saveRowEdit(batchId: string, payload: unknown): Promise<Ac
 }
 
 /** Step 4: save. */
-export async function commitImport(batchId: string): Promise<ActionState> {
+export async function commitImport(batchId: string, confirmReplace = false): Promise<ActionState> {
   const user = await requireUser(WRITERS);
   if (!uuid.safeParse(batchId).success) return { error: "Data impor tidak valid." };
   let saved = 0;
   try {
-    ({ saved } = await queryAsUser((tx) => commitBatch(tx, batchId, user.id)));
+    ({ saved } = await queryAsUser((tx) => commitBatch(tx, batchId, user.id, { confirmReplace: confirmReplace === true })));
   } catch (e) {
     return { error: friendlyError(e) };
   }

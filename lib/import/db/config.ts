@@ -52,6 +52,8 @@ export interface BatchConfig {
   /** Results imports: how answers were read. */
   resultsMode?: "items" | "total";
   answerMode?: "letter" | "binary" | null;
+  /** Results imports: students in the file who already have a stored result (replaced only after confirmation). */
+  replaceCount?: number;
 }
 
 export interface BatchSource {

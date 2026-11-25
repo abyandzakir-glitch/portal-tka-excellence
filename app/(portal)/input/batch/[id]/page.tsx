@@ -242,7 +242,7 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
 
       {batch.status === "superseded" ? (
         <p className="rounded-lg border border-border bg-status-kurang-data-tint p-3 text-sm">
-          Data dari unggahan ini sudah digantikan oleh unggahan yang lebih baru untuk try out dan sekolah yang sama.{" "}
+          Hasil semua siswa di unggahan ini sudah diganti oleh unggahan yang lebih baru untuk try out yang sama.{" "}
           {batch.supersededBy ? <Link href={`/input/batch/${batch.supersededBy}`} className="text-brand-blue underline">Lihat unggahan terbaru</Link> : null}
         </p>
       ) : null}
@@ -307,7 +307,7 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
         errors={s.error}
         warnings={s.warning}
         blocked={fileErrors.length > 0}
-        replaces={config.kind === "tryout_results" ? "Data hasil TO yang sudah tersimpan untuk sekolah ini akan digantikan oleh unggahan ini." : null}
+        replaceCount={config.kind === "tryout_results" ? (config.replaceCount ?? 0) : null}
       />
     </div>
   );

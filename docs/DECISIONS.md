@@ -64,6 +64,7 @@ Format: setiap keputusan berisi tanggal, keputusan, dan alasan. Keputusan yang d
 
 - **[Disetujui]** **Kisi-kisi TO**: Super Admin mengunggah kisi untuk TO bersama jaringan; admin sekolah boleh membuat TO khusus sekolahnya sendiri. **Hasil TO** selalu diunggah oleh admin masing-masing sekolah (Super Admin juga bisa, atas nama sekolah mana pun).
 - **[Disetujui]** **Unggah ulang hasil TO** untuk TO + sekolah yang sama **menggantikan** data sebelumnya. Batch lama ditandai *Digantikan*; data lama disimpan sebagai snapshot di batch baru, sehingga bila batch baru dibatalkan, data lama dipulihkan.
+  - **Diubah (Nov 2026, atas permintaan yayasan):** penggantian kini **per siswa**, bukan per sekolah. Sekolah mengunggah hasil per kelas; file kelas kedua sebelumnya menghapus hasil kelas pertama (kasus SD Cimahi 6A → 6B). Sekarang hanya siswa yang ada di file yang diganti, dan itu pun hanya setelah pengguna mencentang konfirmasi (dicek juga di server). Batch lama menjadi *Digantikan* hanya bila semua barisnya sudah diganti; bila masih memegang siswa lain, statusnya tetap *Tersimpan*. Rollback tetap berurutan: batch yang sebagian siswanya diganti batch yang lebih baru tidak bisa dibatalkan sebelum batch terbaru itu dibatalkan.
 - **[Disetujui]** **Siswa yang tidak ada di master** → baris *error* dengan saran nama mirip, tidak disimpan, tidak dibuat otomatis.
 - **[Disetujui]** **Semua jawaban kosong** di hasil TO → siswa dianggap **absen**. Jawaban kosong sebagian → butir itu "tidak dijawab" (dihitung salah).
 

@@ -111,7 +111,8 @@ async function main() {
   const b1 = await upload(adminBdg, "tryout_results", SDTJBDG, sheet1, { tryoutId: to4!.id });
   check("pratinjau tanpa error", b1.config.summary.error === 0 && b1.config.summary.total === roster.length, JSON.stringify(b1.config.summary));
   check("jawaban dibaca sebagai huruf", b1.config.answerMode === "letter");
-  await asUser(adminBdg, (tx) => commitBatch(tx, b1.id, adminBdg));
+  // The seed already holds results for this TO, so the first upload replaces them too.
+  await asUser(adminBdg, (tx) => commitBatch(tx, b1.id, adminBdg, { confirmReplace: true }));
   const after1 = await scoreState(to4!.id, SDTJBDG);
   check("nilai tersimpan untuk semua siswa", after1.n === roster.length, JSON.stringify(after1));
   const present = await one(client<{ n: number; avg: string }[]>`
@@ -122,7 +123,11 @@ async function main() {
   // Upload 2: everybody answers "A".
   const sheet2: Cell[][] = [header, ...roster.map((s) => [s.nis, s.full_name, ...items.map(() => "A")])];
   const b2 = await upload(adminBdg, "tryout_results", SDTJBDG, sheet2, { tryoutId: to4!.id });
-  await asUser(adminBdg, (tx) => commitBatch(tx, b2.id, adminBdg));
+  check("pratinjau menghitung siswa yang akan diganti", b2.config.replaceCount === roster.length, String(b2.config.replaceCount));
+  const noConfirm = await expectError(() => asUser(adminBdg, (tx) => commitBatch(tx, b2.id, adminBdg)));
+  check("penggantian tanpa konfirmasi ditolak", noConfirm !== null && /konfirmasi penggantian/.test(noConfirm), noConfirm ?? "berhasil");
+  check("penolakan tidak mengubah data", JSON.stringify(await scoreState(to4!.id, SDTJBDG)) === JSON.stringify(after1));
+  await asUser(adminBdg, (tx) => commitBatch(tx, b2.id, adminBdg, { confirmReplace: true }));
   const status1 = await one(client<{ status: string; superseded_by: string }[]>`select status, superseded_by from public.import_batches where id = ${b1.id}`);
   check("unggahan pertama ditandai digantikan", status1.status === "superseded" && status1.superseded_by === b2.id, JSON.stringify(status1));
   const after2 = await scoreState(to4!.id, SDTJBDG);
@@ -142,6 +147,48 @@ async function main() {
 
   await asUser(superAdmin, (tx) => rollbackBatch(tx, b1.id, superAdmin));
   check("batalkan unggahan pertama → data seed kembali utuh", JSON.stringify(await scoreState(to4!.id, SDTJBDG)) === JSON.stringify(seeded), `${JSON.stringify(await scoreState(to4!.id, SDTJBDG))} vs ${JSON.stringify(seeded)}`);
+
+  // ---------------------------------------------------------------------------
+  console.log("\nHasil TO per kelas: file kedua menambah, bukan menggantikan");
+  const half = Math.floor(roster.length / 2);
+  const classA = roster.slice(0, half);
+  const classB = roster.slice(half);
+  const asSheet = (list: readonly { nis: string; full_name: string }[], answer: (i: { answer_key: string }) => string): Cell[][] => [header, ...list.map((s) => [s.nis, s.full_name, ...items.map(answer)])];
+  const wipe = await upload(adminBdg, "tryout_results", SDTJBDG, asSheet(roster, (i) => i.answer_key), { tryoutId: to4!.id });
+  await asUser(adminBdg, (tx) => commitBatch(tx, wipe.id, adminBdg, { confirmReplace: true }));
+  // Two class files on top of a whole-school upload.
+  const cA = await upload(adminBdg, "tryout_results", SDTJBDG, asSheet(classA, () => "A"), { tryoutId: to4!.id });
+  await asUser(adminBdg, (tx) => commitBatch(tx, cA.id, adminBdg, { confirmReplace: true }));
+  const cB = await upload(adminBdg, "tryout_results", SDTJBDG, asSheet(classB, () => "B"), { tryoutId: to4!.id });
+  check("kelas B tidak mengganti siswa kelas A", cB.config.replaceCount === classB.length, String(cB.config.replaceCount));
+  await asUser(adminBdg, (tx) => commitBatch(tx, cB.id, adminBdg, { confirmReplace: true }));
+  const perClass = await one(client<{ a: number; b: number }[]>`
+    select count(*) filter (where import_batch_id = ${cA.id})::int as a, count(*) filter (where import_batch_id = ${cB.id})::int as b
+      from public.tryout_scores where tryout_id = ${to4!.id} and school_id = ${SDTJBDG}`);
+  check("hasil kelas A dan kelas B tersimpan berdampingan", perClass.a === classA.length && perClass.b === classB.length, JSON.stringify(perClass));
+  const statuses = await client<{ id: string; status: string }[]>`select id, status from public.import_batches where id in (${wipe.id}, ${cA.id}, ${cB.id})`;
+  const st = (id: string) => statuses.find((s) => s.id === id)!.status;
+  check("unggahan kelas A tetap aktif; unggahan yang seluruh siswanya diganti menjadi digantikan", st(cA.id) === "committed" && st(cB.id) === "committed" && st(wipe.id) === "superseded", JSON.stringify(statuses));
+
+  // Class A again (correction): replaces class A only, after confirmation.
+  const cA2 = await upload(adminBdg, "tryout_results", SDTJBDG, asSheet(classA, (i) => i.answer_key), { tryoutId: to4!.id });
+  check("koreksi kelas A: hanya siswa kelas A yang akan diganti", cA2.config.replaceCount === classA.length);
+  await asUser(adminBdg, (tx) => commitBatch(tx, cA2.id, adminBdg, { confirmReplace: true }));
+  const afterFix = await one(client<{ a2: number; b: number }[]>`
+    select count(*) filter (where import_batch_id = ${cA2.id})::int as a2, count(*) filter (where import_batch_id = ${cB.id})::int as b
+      from public.tryout_scores where tryout_id = ${to4!.id} and school_id = ${SDTJBDG}`);
+  check("koreksi kelas A tidak menyentuh kelas B", afterFix.a2 === classA.length && afterFix.b === classB.length, JSON.stringify(afterFix));
+  const stA = await one(client<{ status: string }[]>`select status from public.import_batches where id = ${cA.id}`);
+  check("unggahan kelas A lama menjadi digantikan", stA.status === "superseded");
+
+  const outOfOrder = await expectError(() => asUser(superAdmin, (tx) => rollbackBatch(tx, cB.id, superAdmin)));
+  check("unggahan kelas B baru bisa dibatalkan (tidak ada yang menggantinya)", outOfOrder === null, outOfOrder ?? "");
+  const blockedWipe = await expectError(() => asUser(superAdmin, (tx) => rollbackBatch(tx, cA.id, superAdmin)));
+  check("unggahan kelas A lama tidak bisa dibatalkan sebelum koreksinya", blockedWipe !== null && /digantikan|lebih baru/.test(blockedWipe), blockedWipe ?? "berhasil");
+
+  // Undo newest first: everything returns to the seed.
+  for (const b of [cA2, cA, wipe]) await asUser(superAdmin, (tx) => rollbackBatch(tx, b.id, superAdmin));
+  check("membatalkan berurutan mengembalikan data seed", JSON.stringify(await scoreState(to4!.id, SDTJBDG)) === JSON.stringify(seeded), JSON.stringify(await scoreState(to4!.id, SDTJBDG)));
 
   // ---------------------------------------------------------------------------
   console.log("\nIsolasi sekolah");
@@ -195,7 +242,7 @@ async function main() {
   check("admin sekolah bisa membuat TO sekolahnya beserta 5 butir", createdItems.n === 5);
 
   const r1 = await upload(adminBdg, "tryout_results", SDTJBDG, [["NIS", "1", "2", "3", "4", "5"], [roster[0]!.nis, "A", "B", "C", "D", "A"]], { tryoutId: bpResult.tryoutId });
-  await asUser(adminBdg, (tx) => commitBatch(tx, r1.id, adminBdg));
+  await asUser(adminBdg, (tx) => commitBatch(tx, r1.id, adminBdg, { confirmReplace: true }));
   const blocked = await expectError(() => asUser(superAdmin, (tx) => rollbackBatch(tx, bp.id, superAdmin)));
   check("kisi-kisi TO yang sudah punya hasil tidak bisa dibatalkan", blocked !== null && /sudah punya hasil/.test(blocked), blocked ?? "berhasil");
   await asUser(superAdmin, (tx) => rollbackBatch(tx, r1.id, superAdmin));

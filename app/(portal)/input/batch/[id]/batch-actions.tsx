@@ -44,10 +44,12 @@ export function BatchActions(props: {
   errors: number;
   warnings: number;
   blocked: boolean;
-  replaces: string | null;
+  /** TO results: students in the file who already have a stored result (null for other kinds). */
+  replaceCount: number | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [acknowledged, setAcknowledged] = useState(false);
+  const [replaceConfirmed, setReplaceConfirmed] = useState(false);
   const [confirm, setConfirm] = useState<"discard" | "rollback" | null>(null);
 
   function run(fn: () => Promise<ActionState>, after?: () => void) {
@@ -61,7 +63,9 @@ export function BatchActions(props: {
 
   if (props.status === "draft") {
     const needsAck = props.warnings > 0;
-    const disabled = pending || props.blocked || props.savable === 0 || (needsAck && !acknowledged);
+    const replaceCount = props.replaceCount ?? 0;
+    const needsReplace = replaceCount > 0;
+    const disabled = pending || props.blocked || props.savable === 0 || (needsAck && !acknowledged) || (needsReplace && !replaceConfirmed);
     return (
       <section aria-labelledby="simpan" className="space-y-3 rounded-lg border border-border bg-white p-4">
         <h2 id="simpan" className="text-base font-semibold">Simpan data</h2>
@@ -73,7 +77,19 @@ export function BatchActions(props: {
             {props.errors > 0 ? ` ${props.errors} baris bermasalah tidak ikut disimpan; perbaiki dengan tombol "Ubah" atau di file lalu unggah ulang.` : ""}
           </p>
         )}
-        {props.replaces && !props.blocked ? <p className="text-sm text-brand-gray-light">{props.replaces} Data lama tetap bisa dipulihkan oleh Super Admin.</p> : null}
+        {props.replaceCount != null && !props.blocked ? (
+          <p className="text-sm text-brand-gray-light">
+            Hasil yang disimpan ditambahkan ke hasil TO sekolah ini; hasil siswa yang tidak ada di file (mis. kelas lain) tidak berubah.
+          </p>
+        ) : null}
+        {needsReplace && !props.blocked ? (
+          <label className="flex items-start gap-2 rounded-md border border-status-berkembang/40 bg-status-berkembang-tint p-3 text-sm">
+            <input type="checkbox" className="mt-0.5" checked={replaceConfirmed} onChange={(e) => setReplaceConfirmed(e.target.checked)} />
+            <span>
+              Ganti hasil TO <strong>{replaceCount} siswa</strong> yang sudah tersimpan dengan data dari file ini. Data lama tetap bisa dipulihkan oleh Super Admin.
+            </span>
+          </label>
+        ) : null}
         {needsAck && !props.blocked ? (
           <label className="flex items-start gap-2 text-sm">
             <input type="checkbox" className="mt-0.5" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
@@ -81,7 +97,7 @@ export function BatchActions(props: {
           </label>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" size="lg" disabled={disabled} onClick={() => run(() => commitImport(props.batchId))}>
+          <Button type="button" size="lg" disabled={disabled} onClick={() => run(() => commitImport(props.batchId, needsReplace && replaceConfirmed))}>
             {pending ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Save aria-hidden="true" />}
             Simpan {props.savable} baris
           </Button>

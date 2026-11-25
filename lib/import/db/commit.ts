@@ -8,12 +8,14 @@
  * the batch each old row belonged to — survive the round trip.
  *
  * Approved rules (DECISIONS.md, Fase 2):
- *   - TO results replace the previous upload for the same TO + school; the
- *     older batch becomes "superseded" and is reinstated on rollback.
+ *   - TO results replace stored results only for the students in the file
+ *     (a second class's file adds to the first), after explicit confirmation.
+ *     An older batch whose rows are all replaced becomes "superseded" and is
+ *     reinstated on rollback.
  *   - Practice logs replace stored logs with the same student/week/subject/competency.
  *   - Only Super Admin may roll back (also enforced by a database trigger).
  */
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { RlsTx } from "@/lib/db/rls";
 import {
   academicYears,
@@ -164,26 +166,40 @@ function itemValues(it: BlueprintItem) {
   };
 }
 
-async function commitResults(tx: RlsTx, batch: ImportBatchRow, config: BatchConfig): Promise<{ saved: number; tryoutId: string }> {
+async function commitResults(
+  tx: RlsTx,
+  batch: ImportBatchRow,
+  config: BatchConfig,
+  confirmReplace: boolean,
+): Promise<{ saved: number; tryoutId: string }> {
   const tryoutId = config.options.tryoutId;
   const schoolId = batch.schoolId;
   if (!tryoutId || !schoolId) throw new ImportError("Pilih try out dan sekolah terlebih dahulu.");
+  if ((config.replaceCount ?? 0) > 0 && !confirmReplace) {
+    throw new ImportError(
+      `${config.replaceCount} siswa di file ini sudah punya hasil untuk TO ini. Centang konfirmasi penggantian sebelum menyimpan.`,
+    );
+  }
   const rows = await savableRows<ResultRow>(tx, batch.id);
+  // Only the students in this file are replaced: a second class's file adds to the first.
+  const studentIds = sql`${`{${rows.map((r) => r.studentId).join(",")}}`}::uuid[]`;
 
-  // 1. Snapshot whatever is stored for this TO + school (from earlier uploads or seed).
+  // 1. Snapshot what is stored for these students (from earlier uploads or seed).
   await tx.execute(sql`
     update public.import_batches
        set tryout_id = ${tryoutId},
            snapshot_json = jsonb_build_object(
              'scores', (select coalesce(jsonb_agg(to_jsonb(s)), '[]'::jsonb) from public.tryout_scores s
-                         where s.tryout_id = ${tryoutId} and s.school_id = ${schoolId}),
+                         where s.tryout_id = ${tryoutId} and s.school_id = ${schoolId} and s.student_id = any(${studentIds})),
              'responses', (select coalesce(jsonb_agg(to_jsonb(r)), '[]'::jsonb) from public.item_responses r
-                         where r.tryout_id = ${tryoutId} and r.school_id = ${schoolId}))
+                         where r.tryout_id = ${tryoutId} and r.school_id = ${schoolId} and r.student_id = any(${studentIds})))
      where id = ${batch.id}`);
 
-  // 2. Replace.
-  await tx.delete(itemResponses).where(and(eq(itemResponses.tryoutId, tryoutId), eq(itemResponses.schoolId, schoolId)));
-  await tx.delete(tryoutScores).where(and(eq(tryoutScores.tryoutId, tryoutId), eq(tryoutScores.schoolId, schoolId)));
+  // 2. Replace those students only.
+  await tx.execute(sql`delete from public.item_responses
+    where tryout_id = ${tryoutId} and school_id = ${schoolId} and student_id = any(${studentIds})`);
+  await tx.execute(sql`delete from public.tryout_scores
+    where tryout_id = ${tryoutId} and school_id = ${schoolId} and student_id = any(${studentIds})`);
   await chunked(rows, 1000, (chunk) =>
     tx.insert(tryoutScores).values(
       chunk.map((r) => ({
@@ -213,19 +229,14 @@ async function commitResults(tx: RlsTx, batch: ImportBatchRow, config: BatchConf
   );
   await chunked(responses, 2000, (chunk) => tx.insert(itemResponses).values(chunk));
 
-  // 3. Earlier uploads for the same TO + school are now superseded.
-  await tx
-    .update(importBatches)
-    .set({ status: "superseded", supersededBy: batch.id })
-    .where(
-      and(
-        eq(importBatches.type, "tryout_results"),
-        eq(importBatches.tryoutId, tryoutId),
-        eq(importBatches.schoolId, schoolId),
-        eq(importBatches.status, "committed"),
-        ne(importBatches.id, batch.id),
-      ),
-    );
+  // 3. Earlier uploads for the same TO + school whose rows are now all replaced are superseded.
+  //    Uploads that still hold other students (e.g. another class) stay "committed".
+  await tx.execute(sql`
+    update public.import_batches b
+       set status = 'superseded', superseded_by = ${batch.id}
+     where b.type = 'tryout_results' and b.tryout_id = ${tryoutId} and b.school_id = ${schoolId}
+       and b.status = 'committed' and b.id <> ${batch.id}
+       and not exists (select 1 from public.tryout_scores s where s.import_batch_id = b.id)`);
   return { saved: rows.length, tryoutId };
 }
 
@@ -375,7 +386,12 @@ async function commitStudents(tx: RlsTx, batch: ImportBatchRow): Promise<{ saved
  * Validates once more against current master data, then writes the batch.
  * Runs entirely inside the caller's (RLS) transaction: all or nothing.
  */
-export async function commitBatch(tx: RlsTx, batchId: string, userId: string): Promise<CommitResult> {
+export async function commitBatch(
+  tx: RlsTx,
+  batchId: string,
+  userId: string,
+  opts: { confirmReplace?: boolean } = {},
+): Promise<CommitResult> {
   const config = await stageBatch(tx, batchId);
   const batch = await loadBatch(tx, batchId);
   const blocking = config.fileIssues.find((i) => i.level === "error");
@@ -391,7 +407,7 @@ export async function commitBatch(tx: RlsTx, batchId: string, userId: string): P
       ({ saved, tryoutId } = await commitBlueprint(tx, batch, config));
       break;
     case "tryout_results":
-      ({ saved, tryoutId } = await commitResults(tx, batch, config));
+      ({ saved, tryoutId } = await commitResults(tx, batch, config, opts.confirmReplace === true));
       break;
     case "practice_logs":
       ({ saved } = await commitPractice(tx, batch));
@@ -437,6 +453,18 @@ export async function rollbackBatch(tx: RlsTx, batchId: string, userId: string):
 
   switch (batch.type) {
     case "tryout_results": {
+      // Rows of this upload that a later upload replaced live in that upload's snapshot:
+      // undo the later one first, so data is restored in order.
+      const [{ n: replacedLater }] = await tx.execute<{ n: number }>(sql`
+        select count(*)::int as n
+          from public.import_batches b, jsonb_array_elements(coalesce(b.snapshot_json -> 'scores', '[]'::jsonb)) e
+         where b.type = 'tryout_results' and b.tryout_id = ${batch.tryoutId} and b.status = 'committed'
+           and b.id <> ${batchId} and e ->> 'import_batch_id' = ${batchId}`);
+      if (Number(replacedLater) > 0) {
+        throw new ImportError(
+          "Sebagian siswa di unggahan ini sudah diganti oleh unggahan yang lebih baru. Batalkan unggahan terbaru terlebih dahulu.",
+        );
+      }
       await tx.delete(itemResponses).where(eq(itemResponses.importBatchId, batchId));
       await tx.delete(tryoutScores).where(eq(tryoutScores.importBatchId, batchId));
       await tx.execute(sql`insert into public.tryout_scores

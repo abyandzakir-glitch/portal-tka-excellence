@@ -78,6 +78,8 @@ export interface ResultsContext {
   /** Blueprint items of the try-out; empty when the TO has no blueprint yet. */
   items: readonly ResultsItem[];
   roster: Roster;
+  /** Students who already have a stored result for this TO (their rows will be replaced on save). */
+  storedStudentIds?: ReadonlySet<string>;
 }
 
 export interface ResultResponse {
@@ -111,7 +113,7 @@ export function validateResults(
   rows: readonly RowInput[],
   columns: ColumnMapping,
   ctx: ResultsContext,
-): ValidationResult<ResultRow> & { mode: "items" | "total"; answerMode: "letter" | "binary" | null } {
+): ValidationResult<ResultRow> & { mode: "items" | "total"; answerMode: "letter" | "binary" | null; replaceCount: number } {
   const fileIssues: Issue[] = [];
   const mapped = new Set(columns.filter((c): c is string => Boolean(c)));
   const fileItemNumbers = [...mapped].map(itemNumberOf).filter((n): n is number => n != null);
@@ -317,5 +319,18 @@ export function validateResults(
       message: "File hanya berisi nilai total: nilai masuk ke tren, tetapi tidak dihitung untuk analisis kompetensi.",
     });
   }
-  return { rows: out, fileIssues, mode, answerMode };
+
+  // Only students in this file are replaced; everyone else's stored result stays (e.g. one file per class).
+  const replacedNames = out
+    .filter((r) => r.data && ctx.storedStudentIds?.has(r.data.studentId))
+    .map((r) => r.data!.studentName);
+  if (replacedNames.length) {
+    const shown = replacedNames.slice(0, 5).join(", ");
+    const more = replacedNames.length > 5 ? `, dan ${replacedNames.length - 5} siswa lainnya` : "";
+    fileIssues.push({
+      level: "warning",
+      message: `${replacedNames.length} siswa di file ini sudah punya hasil untuk TO ini (${shown}${more}). Hasil lama mereka akan diganti setelah Anda mengonfirmasi. Hasil siswa lain tidak berubah.`,
+    });
+  }
+  return { rows: out, fileIssues, mode, answerMode, replaceCount: replacedNames.length };
 }

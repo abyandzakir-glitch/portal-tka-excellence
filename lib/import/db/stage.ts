@@ -4,9 +4,9 @@
  * `import_rows`. Re-run after every mapping change or edit, and once more
  * right before commit so the saved data reflects current master data.
  */
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { RlsTx } from "@/lib/db/rls";
-import { academicYears, importBatches, importRows, schools, tryouts } from "@/lib/db/schema";
+import { academicYears, importBatches, importRows, schools, tryouts, tryoutScores } from "@/lib/db/schema";
 import { validateAchievements } from "../achievements/validate";
 import { validateStudents, type ExistingStudent } from "../students/validate";
 import { todayIso } from "@/lib/format/id";
@@ -38,7 +38,7 @@ async function loadTryout(tx: RlsTx, tryoutId: string) {
   return t;
 }
 
-type AnyResult = ValidationResult<unknown> & { mode?: "items" | "total"; answerMode?: "letter" | "binary" | null };
+type AnyResult = ValidationResult<unknown> & { mode?: "items" | "total"; answerMode?: "letter" | "binary" | null; replaceCount?: number };
 
 async function validate(tx: RlsTx, batch: ImportBatchRow, config: BatchConfig, inputs: RowInput[]): Promise<AnyResult> {
   switch (config.kind) {
@@ -62,8 +62,15 @@ async function validate(tx: RlsTx, batch: ImportBatchRow, config: BatchConfig, i
       if (!batch.schoolId) throw new ImportError("Pilih sekolah untuk hasil TO ini.");
       if (!config.options.tryoutId) throw new ImportError("Pilih try out terlebih dahulu.");
       await loadTryout(tx, config.options.tryoutId);
-      const [items, roster] = await Promise.all([loadTryoutItems(tx, config.options.tryoutId), loadRoster(tx, batch.schoolId)]);
-      return validateResults(inputs, config.columns, { items, roster });
+      const [items, roster, stored] = await Promise.all([
+        loadTryoutItems(tx, config.options.tryoutId),
+        loadRoster(tx, batch.schoolId),
+        tx
+          .select({ id: tryoutScores.studentId })
+          .from(tryoutScores)
+          .where(and(eq(tryoutScores.tryoutId, config.options.tryoutId), eq(tryoutScores.schoolId, batch.schoolId))),
+      ]);
+      return validateResults(inputs, config.columns, { items, roster, storedStudentIds: new Set(stored.map((s) => s.id)) });
     }
     case "practice_logs": {
       if (!batch.schoolId) throw new ImportError("Pilih sekolah untuk log latihan ini.");
@@ -158,6 +165,7 @@ export async function stageBatch(tx: RlsTx, batchId: string, patch?: Partial<Bat
     summary,
     resultsMode: result.mode,
     answerMode: result.answerMode,
+    replaceCount: result.replaceCount,
   };
   await tx
     .update(importBatches)

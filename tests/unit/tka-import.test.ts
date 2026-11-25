@@ -296,6 +296,19 @@ describe("impor hasil TO: template vs file berantakan", () => {
     expect(unknown.rows[0]!.issues[0]!.message).toMatch(/NIS 111 \(Zainal\) tidak ditemukan/);
   });
 
+  it("hanya siswa di file yang sudah punya hasil yang dihitung sebagai penggantian", () => {
+    const rows = [
+      { rowNumber: 2, values: { nis: "20245001", total_score: 80 } },
+      { rowNumber: 3, values: { nis: "20245002", total_score: 70 } },
+    ];
+    const none = validateResults(rows, ["nis", "total_score"], { items, roster, storedStudentIds: new Set(["st-3", "st-4"]) });
+    expect(none.replaceCount).toBe(0);
+    expect(none.fileIssues.some((i) => /sudah punya hasil/.test(i.message))).toBe(false);
+    const one = validateResults(rows, ["nis", "total_score"], { items, roster, storedStudentIds: new Set(["st-2", "st-3"]) });
+    expect(one.replaceCount).toBe(1);
+    expect(one.fileIssues.find((i) => /sudah punya hasil/.test(i.message))?.message).toMatch(/^1 siswa .*Hasil siswa lain tidak berubah/);
+  });
+
   it("pilihan huruf tanpa kunci jawaban ditolak", () => {
     const noKey = items.map((it) => ({ ...it, answerKey: null }));
     const res = validateResults([{ rowNumber: 2, values: { nis: "20245001", "item:1": "C" } }], ["nis", "item:1"], { items: noKey, roster });
