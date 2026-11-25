@@ -224,6 +224,9 @@ async function BatchContent({ params }: { params: PageProps<"/input/batch/[id]">
         {opts.newTryout ? (
           <div><dt className="text-brand-gray-light">TO baru</dt><dd>{opts.newTryout.name}, {formatDate(opts.newTryout.date)}</dd></div>
         ) : null}
+        {opts.sittingDate ? (
+          <div><dt className="text-brand-gray-light">Tanggal pelaksanaan</dt><dd>{formatDate(opts.sittingDate)}</dd></div>
+        ) : null}
         {opts.defaultWeek ? <div><dt className="text-brand-gray-light">Pekan bawaan</dt><dd>{formatWeek(opts.defaultWeek)}</dd></div> : null}
         {fileUrl ? (
           <div>

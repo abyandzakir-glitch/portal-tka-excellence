@@ -52,32 +52,68 @@ export function MergeButton({ ids, name, count }: { ids: string[]; name: string;
   );
 }
 
-export function SchoolsForm(props: { tryoutId: string; schools: { id: string; code: string }[]; selected: string[]; locked: string[] }) {
+export function SchoolsForm(props: {
+  tryoutId: string;
+  /** The TO's reference date (default for a newly added school). */
+  date: string;
+  schools: { id: string; code: string }[];
+  /** school id -> sitting date, for participating schools. */
+  dates: Record<string, string>;
+  locked: string[];
+}) {
   const [state, action, pending] = useActionState<TryoutActionState, FormData>(saveTryoutSchools, {});
+  const [checked, setChecked] = useState(() => new Set(Object.keys(props.dates)));
   useEffect(() => {
     if (state.error) toast.error(state.error);
     else if (state.message) toast.success(state.message);
   }, [state]);
   return (
-    <form action={action} className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+    <form action={action} className="space-y-2 text-sm">
       <input type="hidden" name="tryoutId" value={props.tryoutId} />
-      <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <legend className="sr-only">Sekolah peserta</legend>
-        <span className="text-brand-gray-light" aria-hidden="true">Peserta:</span>
-        {props.schools.map((s) => {
-          const locked = props.locked.includes(s.id);
-          return (
-            <label key={s.id} className="flex items-center gap-1" title={locked ? "Sudah punya hasil untuk TO ini" : undefined}>
-              <input type="checkbox" name="sekolah" value={s.id} defaultChecked={props.selected.includes(s.id)} disabled={locked} />
-              {locked ? <input type="hidden" name="sekolah" value={s.id} /> : null}
-              {s.code}
-            </label>
-          );
-        })}
+      <fieldset>
+        <legend className="mb-1 text-brand-gray-light">Sekolah peserta & tanggal pelaksanaannya</legend>
+        <ul className="space-y-1">
+          {props.schools.map((s) => {
+            const locked = props.locked.includes(s.id);
+            const on = checked.has(s.id);
+            return (
+              <li key={s.id} className="flex items-center gap-2">
+                <label className="flex w-28 items-center gap-1.5" title={locked ? "Sudah punya hasil untuk TO ini" : undefined}>
+                  <input
+                    type="checkbox"
+                    name="sekolah"
+                    value={s.id}
+                    checked={on}
+                    disabled={locked}
+                    onChange={(e) =>
+                      setChecked((prev) => {
+                        const next = new Set(prev);
+                        if (e.target.checked) next.add(s.id);
+                        else next.delete(s.id);
+                        return next;
+                      })
+                    }
+                  />
+                  {locked ? <input type="hidden" name="sekolah" value={s.id} /> : null}
+                  {s.code}
+                </label>
+                <input
+                  type="date"
+                  name={`tanggal_${s.id}`}
+                  defaultValue={props.dates[s.id] ?? props.date}
+                  disabled={!on}
+                  required={on}
+                  aria-label={`Tanggal pelaksanaan di ${s.code}`}
+                  className="h-8 rounded-md border border-input bg-white px-2 text-sm focus-visible:outline-2 focus-visible:outline-brand-sky disabled:opacity-40"
+                />
+              </li>
+            );
+          })}
+        </ul>
       </fieldset>
       <Button type="submit" size="sm" variant="outline" disabled={pending}>
         {pending ? <Loader2 aria-hidden="true" className="animate-spin" /> : null}
-        Simpan peserta
+        Simpan peserta & tanggal
       </Button>
     </form>
   );

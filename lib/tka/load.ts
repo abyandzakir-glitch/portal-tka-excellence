@@ -24,6 +24,7 @@ import { loadTkaSettings, type TkaSettings } from "@/lib/settings/tka";
 import {
   averageByTryout,
   indexScores,
+  latestTwoForSchool,
   masteryOf,
   scoreKpi,
   scoreValue,
@@ -249,7 +250,7 @@ export async function loadNetworkView(tx: RlsTx, ctx: TkaContext): Promise<Netwo
   const trend: TrendSeries[] = schoolsWithStudents.map((sc) => ({
     id: sc.id,
     label: sc.code,
-    points: averageByTryout(subjectTryouts.filter((t) => t.schoolIds.includes(sc.id)), allScores, bySchool.get(sc.id)!).map((p) => ({
+    points: averageByTryout(subjectTryouts.filter((t) => t.schoolIds.includes(sc.id)), allScores, bySchool.get(sc.id)!, sc.id).map((p) => ({
       date: p.date,
       tryoutName: p.name,
       average: p.average,
@@ -258,7 +259,7 @@ export async function loadNetworkView(tx: RlsTx, ctx: TkaContext): Promise<Netwo
   }));
 
   const distribution = schoolsWithStudents.map((sc) => {
-    const latest = subjectTryouts.filter((t) => t.schoolIds.includes(sc.id) && allScores.some((s) => s.tryoutId === t.id && s.schoolId === sc.id)).at(-1);
+    const latest = latestTwoForSchool(subjectTryouts, allScores, sc.id).latest;
     const vals = latest
       ? presentScores(allScores.filter((s) => s.tryoutId === latest.id && s.schoolId === sc.id).map((s) => ({ score: scoreValue(s), present: s.present })))
       : [];

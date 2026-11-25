@@ -29,6 +29,7 @@ interface TryoutOption {
   subjectName: string;
   ownerSchoolId: string | null;
   schoolIds: string[];
+  schoolDates: Record<string, string>;
   itemCount: number;
 }
 
@@ -81,6 +82,8 @@ export function UploadForm(props: {
   // Controlled so React does not clear them when the action returns an error.
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
+  // Results: the day this school sat the (shared) TO.
+  const [sitDate, setSitDate] = useState("");
 
   const school = props.schools.find((s) => s.id === schoolId) ?? null;
   const subject = props.subjects.find((s) => s.id === subjectId) ?? null;
@@ -136,6 +139,7 @@ export function UploadForm(props: {
                 onChange={(e) => {
                   setSchoolId(e.target.value);
                   setTryoutId("");
+                  setSitDate("");
                 }}
                 required={kind !== "prestasi" && kind !== "siswa"}
               >
@@ -151,16 +155,48 @@ export function UploadForm(props: {
         ) : null}
 
         {kind === "hasil" ? (
-          <Field id="to" label="Try out" hint={school && resultTryouts.length === 0 ? "Belum ada try out untuk sekolah ini. Unggah kisi-kisi TO terlebih dahulu." : undefined}>
-            <select id="to" name="to" className={selectClass} value={tryoutId} onChange={(e) => setTryoutId(e.target.value)} disabled={!school} required>
-              <option value="">{school ? "Pilih try out…" : "Pilih sekolah dulu"}</option>
-              {resultTryouts.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} — {t.date} {t.itemCount ? `(${t.itemCount} soal)` : "(belum ada kisi-kisi)"}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <>
+            <Field id="to" label="Try out" hint={school && resultTryouts.length === 0 ? "Belum ada try out untuk sekolah ini. Unggah kisi-kisi TO terlebih dahulu." : undefined}>
+              <select
+                id="to"
+                name="to"
+                className={selectClass}
+                value={tryoutId}
+                onChange={(e) => {
+                  setTryoutId(e.target.value);
+                  const t = props.tryouts.find((x) => x.id === e.target.value);
+                  setSitDate(t && school ? (t.schoolDates[school.id] ?? t.date) : "");
+                }}
+                disabled={!school}
+                required
+              >
+                <option value="">{school ? "Pilih try out…" : "Pilih sekolah dulu"}</option>
+                {resultTryouts.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} {t.itemCount ? `(${t.itemCount} soal)` : "(belum ada kisi-kisi)"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {chosenTryout && school ? (
+              <Field
+                id="tanggal-sekolah"
+                label={`Tanggal pelaksanaan di ${school.code}`}
+                hint="Satu try out dipakai bersama; tiap sekolah boleh melaksanakannya di hari yang berbeda. Tanggal ini dipakai di grafik tren dan filter periode untuk sekolah ini."
+              >
+                <Input
+                  id="tanggal-sekolah"
+                  name="tanggal"
+                  type="date"
+                  required
+                  className="h-9 max-w-48"
+                  value={sitDate}
+                  onChange={(e) => setSitDate(e.target.value)}
+                  aria-describedby="tanggal-sekolah-hint"
+                />
+              </Field>
+            ) : null}
+          </>
         ) : null}
 
         {kind === "latihan" ? (

@@ -16,7 +16,8 @@ import * as schema from "../../lib/db/schema";
 import type { RlsTx } from "../../lib/db/rls";
 import { commitBatch, rollbackBatch } from "../../lib/import/db/commit";
 import { createDraftBatch } from "../../lib/import/db/create";
-import { mergeTryouts } from "../../lib/tka/tryouts";
+import { tryoutsInPeriod } from "../../lib/tka/queries";
+import { mergeTryouts, setTryoutSchools } from "../../lib/tka/tryouts";
 import type { BatchOptions } from "../../lib/import/db/config";
 import type { TkaImportKind } from "../../lib/import/pipeline";
 import { readTabularFile, type Cell } from "../../lib/import/sheet";
@@ -282,6 +283,33 @@ async function main() {
            (select tryout_id::text from public.import_batches where id = ${rc.id}) as batch`);
   check("satu TO jaringan dengan dua sekolah peserta dan nilai keduanya", after.tos === 1 && after.owner === null && after.schools === 2 && after.scores === 2, JSON.stringify(after));
   check("jawaban per soal menunjuk butir TO yang dipertahankan; riwayat unggahan ikut pindah", after.foreign === 0 && after.batch === bpResult.tryoutId);
+  const sitting = async () =>
+    Object.fromEntries(
+      (await client<{ s: string; d: string }[]>`select school_id::text as s, date::text as d from public.tryout_schools where tryout_id = ${bpResult.tryoutId}`).map((r) => [r.s, r.d]),
+    );
+  const dates = await sitting();
+  check("tiap sekolah tetap memakai tanggal pelaksanaannya sendiri setelah digabung", dates[SDTJBDG] === "2026-11-10" && dates[SDTJCMH] === "2026-11-12", JSON.stringify(dates));
+  // A school admin records the day their school sat the shared (network) TO when uploading results.
+  const r2 = await upload(adminBdg, "tryout_results", SDTJBDG, [["NIS", "1", "2", "3", "4", "5"], [roster[1]!.nis, "A", "B", "C", "D", "A"]], {
+    tryoutId: bpResult.tryoutId,
+    sittingDate: "2026-11-16",
+  });
+  await asUser(adminBdg, (tx) => commitBatch(tx, r2.id, adminBdg, { confirmReplace: true }));
+  const dates2 = await sitting();
+  check("admin sekolah bisa mengisi tanggal pelaksanaan sekolahnya di TO jaringan", dates2[SDTJBDG] === "2026-11-16" && dates2[SDTJCMH] === "2026-11-12", JSON.stringify(dates2));
+  const periodTos = await asUser(superAdmin, async (tx) => {
+    const [y] = await tx.execute<{ id: string }>(sql`select academic_year_id as id from public.tryouts where id = ${bpResult.tryoutId}`);
+    return tryoutsInPeriod(tx, { academicYearId: y!.id, start: "2026-11-11", end: "2026-11-13", subjectCode: null, schoolId: null });
+  });
+  const inPeriod = periodTos.find((t) => t.id === bpResult.tryoutId);
+  check(
+    "filter periode memakai tanggal tiap sekolah (pekan SDTJCMH saja)",
+    inPeriod !== undefined && inPeriod.schoolIds.length === 1 && inPeriod.schoolIds[0] === SDTJCMH && inPeriod.date === "2026-11-12",
+    JSON.stringify(inPeriod ?? null),
+  );
+  const outside = await expectError(() => asUser(superAdmin, (tx) => setTryoutSchools(tx, bpResult.tryoutId!, [SDTJBDG, SDTJCMH], { [SDTJCMH]: "2030-01-01" })));
+  check("tanggal di luar tahun ajaran TO ditolak", outside !== null && /di luar tahun ajaran/.test(outside), outside ?? "berhasil");
+  await asUser(superAdmin, (tx) => rollbackBatch(tx, r2.id, superAdmin));
   await asUser(superAdmin, (tx) => rollbackBatch(tx, rc.id, superAdmin));
   const cmhLeft = await one(client<{ n: number }[]>`select count(*)::int as n from public.tryout_scores where tryout_id = ${bpResult.tryoutId} and school_id = ${SDTJCMH}`);
   check("unggahan hasil dari TO kembar tetap bisa dibatalkan setelah digabung", cmhLeft.n === 0);

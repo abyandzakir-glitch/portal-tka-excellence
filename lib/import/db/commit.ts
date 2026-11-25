@@ -40,7 +40,7 @@ import { headerSignature } from "../mapping";
 import type { BlueprintItem } from "../tka/blueprint";
 import type { PracticeRow } from "../tka/practice";
 import type { ResultRow } from "../tka/results";
-import { academicYearFor, assertTryoutNameFree } from "@/lib/tka/tryouts";
+import { academicYearFor, assertTryoutNameFree, setSchoolSittingDate } from "@/lib/tka/tryouts";
 import { ImportError, type BatchConfig } from "./config";
 import { loadBatch, stageBatch, type ImportBatchRow } from "./stage";
 
@@ -115,7 +115,7 @@ async function commitBlueprint(tx: RlsTx, batch: ImportBatchRow, config: BatchCo
         importBatchId: batch.id,
       })
       .returning({ id: tryouts.id });
-    await tx.insert(tryoutSchools).values(t.schoolIds.map((schoolId) => ({ tryoutId: created!.id, schoolId })));
+    await tx.insert(tryoutSchools).values(t.schoolIds.map((schoolId) => ({ tryoutId: created!.id, schoolId, date: t.date })));
     await tx.insert(tryoutItems).values(items.map((it) => ({ tryoutId: created!.id, ...itemValues(it) })));
     await tx
       .update(importBatches)
@@ -179,6 +179,8 @@ async function commitResults(
     );
   }
   const rows = await savableRows<ResultRow>(tx, batch.id);
+  // The day this school sat the shared TO (chosen on upload).
+  if (config.options.sittingDate) await setSchoolSittingDate(tx, tryoutId, schoolId, config.options.sittingDate);
   // Only the students in this file are replaced: a second class's file adds to the first.
   const studentIds = sql`${`{${rows.map((r) => r.studentId).join(",")}}`}::uuid[]`;
 

@@ -20,7 +20,7 @@ import { ACCEPTED_EXTENSIONS, fileExtension, MAX_FILE_BYTES, readTabularFile, ty
 import { SETTING_KEYS } from "@/lib/settings/defaults";
 import { parseWeekStart } from "@/lib/import/values";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { assertTryoutNameFree } from "@/lib/tka/tryouts";
+import { assertDateInTryoutYear, assertTryoutNameFree } from "@/lib/tka/tryouts";
 
 export interface ActionState {
   error?: string;
@@ -46,7 +46,7 @@ const startSchema = z.discriminatedUnion("jenis", [
     mapel: optionalUuid,
     peserta: z.array(uuid).default([]),
   }),
-  z.object({ jenis: z.literal("hasil"), to: uuid, sekolah: optionalUuid }),
+  z.object({ jenis: z.literal("hasil"), to: uuid, sekolah: optionalUuid, tanggal: z.string().optional() }),
   z.object({ jenis: z.literal("latihan"), sekolah: optionalUuid, pekan: z.string().optional() }),
   z.object({ jenis: z.literal("prestasi"), sekolah: optionalUuid }),
   z.object({ jenis: z.literal("siswa"), sekolah: optionalUuid }),
@@ -137,10 +137,14 @@ export async function startImport(_prev: ActionState, formData: FormData): Promi
 
       if (input.jenis === "hasil") {
         const participants = await tx.select().from(tryoutSchools).where(eq(tryoutSchools.tryoutId, input.to));
-        if (!participants.some((p) => p.schoolId === schoolId)) {
-          throw new ImportError("Sekolah ini tidak terdaftar sebagai peserta try out tersebut.");
-        }
-        return { schoolId, options: { tryoutId: input.to } satisfies BatchOptions };
+        const own = participants.find((p) => p.schoolId === schoolId);
+        if (!own) throw new ImportError("Sekolah ini tidak terdaftar sebagai peserta try out tersebut.");
+        // The day this school sat the shared TO; empty keeps the date already recorded.
+        const tanggal = input.tanggal?.trim();
+        if (tanggal && !/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) throw new ImportError("Tanggal pelaksanaan tidak valid.");
+        const sittingDate = tanggal || own.date;
+        if (sittingDate !== own.date) await assertDateInTryoutYear(tx, input.to, sittingDate);
+        return { schoolId, options: { tryoutId: input.to, sittingDate } satisfies BatchOptions };
       }
 
       const pekan = input.pekan?.trim() ? parseWeekStart(input.pekan.trim()) : null;

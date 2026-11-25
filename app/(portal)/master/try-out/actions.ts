@@ -38,15 +38,23 @@ export async function mergeTryoutGroup(tryoutIds: string[]): Promise<TryoutActio
   });
 }
 
-const schoolsSchema = z.object({ tryoutId: z.uuid(), schoolIds: z.array(z.uuid()).max(20) });
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal pelaksanaan tidak valid.");
+const schoolsSchema = z.object({ tryoutId: z.uuid(), schoolIds: z.array(z.uuid()).max(20), dates: z.record(z.uuid(), isoDate) });
 
-/** Sets which schools sit a TO (Super Admin). */
+/** Sets which schools sit a TO and the day each sits it (Super Admin). */
 export async function saveTryoutSchools(_prev: TryoutActionState, fd: FormData): Promise<TryoutActionState> {
   await requireUser(["super_admin"]);
-  const p = schoolsSchema.safeParse({ tryoutId: fd.get("tryoutId"), schoolIds: fd.getAll("sekolah") });
-  if (!p.success) return { error: "Isian belum lengkap." };
+  const schoolIds = fd.getAll("sekolah").map(String);
+  const dates = Object.fromEntries(
+    schoolIds.flatMap((id) => {
+      const d = String(fd.get(`tanggal_${id}`) ?? "").trim();
+      return d ? [[id, d]] : [];
+    }),
+  );
+  const p = schoolsSchema.safeParse({ tryoutId: fd.get("tryoutId"), schoolIds, dates });
+  if (!p.success) return { error: p.error.issues[0]?.message ?? "Isian belum lengkap." };
   return run(async () => {
-    await queryAsUser((tx) => setTryoutSchools(tx, p.data.tryoutId, p.data.schoolIds));
-    return "Sekolah peserta tersimpan.";
+    await queryAsUser((tx) => setTryoutSchools(tx, p.data.tryoutId, [...new Set(p.data.schoolIds)], p.data.dates));
+    return "Sekolah peserta dan tanggal pelaksanaan tersimpan.";
   });
 }

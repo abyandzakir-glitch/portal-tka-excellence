@@ -38,6 +38,8 @@ export interface TryoutOption {
   subjectName: string;
   ownerSchoolId: string | null;
   schoolIds: string[];
+  /** school id -> the day that school sits the TO. */
+  schoolDates: Record<string, string>;
   itemCount: number;
 }
 
@@ -66,7 +68,10 @@ export async function listTryouts(tx: RlsTx): Promise<TryoutOption[]> {
   const links = ids.length
     ? await tx.select().from(tryoutSchools).where(inArray(tryoutSchools.tryoutId, ids))
     : [];
-  return rows.map((r) => ({ ...r, schoolIds: links.filter((l) => l.tryoutId === r.id).map((l) => l.schoolId) }));
+  return rows.map((r) => {
+    const own = links.filter((l) => l.tryoutId === r.id);
+    return { ...r, schoolIds: own.map((l) => l.schoolId), schoolDates: Object.fromEntries(own.map((l) => [l.schoolId, l.date])) };
+  });
 }
 
 const uploader = alias(profiles, "uploader");

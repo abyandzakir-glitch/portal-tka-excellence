@@ -18,7 +18,7 @@ export default function TryoutsPage() {
     <>
       <PageHeader
         title="Try Out"
-        description="Satu try out dipakai bersama oleh semua sekolah pesertanya. Atur sekolah peserta, dan gabungkan try out kembar yang terlanjur dibuat terpisah."
+        description="Satu try out (satu kisi-kisi) dipakai bersama oleh semua sekolah pesertanya, dan tiap sekolah boleh melaksanakannya di tanggal berbeda. Atur sekolah peserta dan tanggalnya, dan gabungkan try out kembar yang terlanjur dibuat terpisah."
       />
       <Suspense fallback={<TableSkeleton rows={6} />}>
         <TryoutList />
@@ -38,7 +38,8 @@ interface Row {
   year: string;
   owner: string | null;
   items: number;
-  school_ids: string[];
+  /** school id -> sitting date. */
+  school_dates: Record<string, string>;
   results: { school_id: string; n: number }[];
 }
 
@@ -50,7 +51,7 @@ async function TryoutList() {
         select t.id, t.name, t.date::text as date, t.level, s.name as subject, t.subject_id, t.academic_year_id as year_id, y.label as year,
                o.school_code as owner,
                (select count(*)::int from public.tryout_items i where i.tryout_id = t.id) as items,
-               coalesce((select array_agg(ts.school_id) from public.tryout_schools ts where ts.tryout_id = t.id), '{}') as school_ids,
+               coalesce((select jsonb_object_agg(ts.school_id, ts.date::text) from public.tryout_schools ts where ts.tryout_id = t.id), '{}') as school_dates,
                coalesce((select jsonb_agg(jsonb_build_object('school_id', x.school_id, 'n', x.n))
                            from (select school_id, count(*)::int as n from public.tryout_scores sc where sc.tryout_id = t.id group by school_id) x), '[]') as results
           from public.tryouts t
@@ -106,15 +107,16 @@ async function TryoutList() {
                   <li key={r.id} className="grid gap-2 py-3 md:grid-cols-[1fr_auto] md:items-start">
                     <div className="text-sm">
                       <p>
-                        <span className="font-medium">{formatDate(r.date)}</span> · {r.owner ? `milik ${r.owner}` : "TO jaringan"} ·{" "}
+                        <span className="font-medium">{formatDate(r.date)}</span> (tanggal acuan) · {r.owner ? `milik ${r.owner}` : "TO jaringan"} ·{" "}
                         {r.items ? `${r.items} soal` : "belum ada kisi-kisi"} · {formatNumber(total)} nilai siswa
                         {r.results.length ? ` (${r.results.map((x) => `${code(x.school_id)} ${x.n}`).join(", ")})` : ""}
                       </p>
                     </div>
                     <SchoolsForm
                       tryoutId={r.id}
+                      date={r.date}
                       schools={schoolList.filter((s) => s.level === r.level).map((s) => ({ id: s.id, code: s.code }))}
-                      selected={r.school_ids}
+                      dates={r.school_dates}
                       locked={r.results.map((x) => x.school_id)}
                     />
                   </li>

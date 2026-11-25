@@ -63,15 +63,17 @@ export async function masteryCounts(tx: RlsTx, scope: Scope, groupBy: GroupBy, k
     ${scope.classId ? sql`and e.class_id = ${scope.classId}` : sql``}`;
 
   const rows = await tx.execute<{ g: string; k: string; src: "tryout" | "practice"; recent: boolean; attempted: number; correct: number }>(sql`
-    select ${groupExpr(groupBy, "r")} as g, ${key} as k, 'tryout' as src, (t.date >= ${scope.recentStart}) as recent,
+    select ${groupExpr(groupBy, "r")} as g, ${key} as k, 'tryout' as src, (coalesce(ts.date, t.date) >= ${scope.recentStart}) as recent,
            count(*)::int as attempted, count(*) filter (where r.is_correct)::int as correct
       from public.item_responses r
       join public.tryout_items i on i.id = r.item_id and not i.is_voided
       join public.competencies c on c.id = i.competency_id
       join public.tryouts t on t.id = r.tryout_id
       join public.subjects s on s.id = t.subject_id
+      -- The day the student's school sat it (one TO, per-school dates).
+      left join public.tryout_schools ts on ts.tryout_id = r.tryout_id and ts.school_id = r.school_id
       ${enrollJoin("r")}
-     where t.academic_year_id = ${scope.academicYearId} and t.date between ${scope.start} and ${scope.end}
+     where t.academic_year_id = ${scope.academicYearId} and coalesce(ts.date, t.date) between ${scope.start} and ${scope.end}
        ${filters("r")}
      group by 1, 2, 3, 4
     union all
@@ -119,26 +121,53 @@ export function scopeStudents(tx: RlsTx, scope: Pick<Scope, "academicYearId" | "
 export interface TryoutInfo {
   id: string;
   name: string;
+  /**
+   * With a school in scope: the day that school sat the TO. Otherwise the
+   * earliest sitting in the period (for ordering); use dateFor() per school.
+   */
   date: string;
   level: "sd" | "smp";
   subjectId: string;
   subjectCode: string;
   /** Non-voided items. */
   itemCount: number;
+  /** Participating schools whose sitting date falls in the period. */
   schoolIds: string[];
+  /** school id -> sitting date (YYYY-MM-DD). */
+  schoolDates: Record<string, string>;
 }
 
+/**
+ * Try-outs sat in the period: a TO is in the period for a school when that
+ * school's sitting date is, so one shared TO can fall in different weeks per school.
+ */
 export async function tryoutsInPeriod(tx: RlsTx, scope: Pick<Scope, "academicYearId" | "start" | "end" | "subjectCode" | "schoolId">): Promise<TryoutInfo[]> {
-  const rows = await tx.execute<Omit<TryoutInfo, "schoolIds"> & { schoolIds: string[] | null } & Record<string, unknown>>(sql`
-    select t.id, t.name, t.date::text as date, t.level, t.subject_id as "subjectId", s.code as "subjectCode",
+  const rows = await tx.execute<{
+    id: string;
+    name: string;
+    level: "sd" | "smp";
+    subjectId: string;
+    subjectCode: string;
+    itemCount: number;
+    sittings: { s: string; d: string }[];
+  }>(sql`
+    select t.id, t.name, t.level, t.subject_id as "subjectId", s.code as "subjectCode",
            (select count(*)::int from public.tryout_items i where i.tryout_id = t.id and not i.is_voided) as "itemCount",
-           (select array_agg(ts.school_id::text) from public.tryout_schools ts where ts.tryout_id = t.id) as "schoolIds"
-      from public.tryouts t join public.subjects s on s.id = t.subject_id
-     where t.academic_year_id = ${scope.academicYearId} and t.date between ${scope.start} and ${scope.end}
+           jsonb_agg(jsonb_build_object('s', ts.school_id::text, 'd', ts.date::text) order by ts.date) as sittings
+      from public.tryouts t
+      join public.subjects s on s.id = t.subject_id
+      join public.tryout_schools ts on ts.tryout_id = t.id and ts.date between ${scope.start} and ${scope.end}
+     where t.academic_year_id = ${scope.academicYearId}
        ${scope.subjectCode ? sql`and s.code = ${scope.subjectCode}` : sql``}
-       ${scope.schoolId ? sql`and exists (select 1 from public.tryout_schools ts where ts.tryout_id = t.id and ts.school_id = ${scope.schoolId})` : sql``}
-     order by t.date, t.name`);
-  return rows.map((r) => ({ ...r, schoolIds: r.schoolIds ?? [] }));
+       ${scope.schoolId ? sql`and ts.school_id = ${scope.schoolId}` : sql``}
+     group by t.id, s.code`);
+  return rows
+    .map((r) => {
+      const schoolDates = Object.fromEntries(r.sittings.map((x) => [x.s, x.d]));
+      const { sittings, ...rest } = r;
+      return { ...rest, date: sittings[0]!.d, schoolIds: Object.keys(schoolDates), schoolDates };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
 }
 
 export interface ScoreInfo {

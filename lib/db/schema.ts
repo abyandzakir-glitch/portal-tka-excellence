@@ -324,6 +324,11 @@ export const tryoutSchools = pgTable(
       .notNull()
       .references(() => tryouts.id, { onDelete: "cascade" }),
     schoolId: uuid("school_id").notNull().references(() => schools.id),
+    /**
+     * The day this school sat the TO. One blueprint is shared, but schools may
+     * sit it on different days. Filled from tryouts.date on insert when omitted (trigger).
+     */
+    date: date("date").notNull(),
   },
   (t) => [primaryKey({ columns: [t.tryoutId, t.schoolId] }), index("tryout_schools_school_idx").on(t.schoolId)],
 );

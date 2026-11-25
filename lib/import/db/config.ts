@@ -22,6 +22,8 @@ export interface NewTryoutOptions {
 export interface BatchOptions {
   /** Results imports, and blueprint imports that update an existing TO. */
   tryoutId?: string | null;
+  /** Results imports: the day the batch's school sat the TO (set on commit). */
+  sittingDate?: string | null;
   /** Blueprint imports that create a new TO on commit. */
   newTryout?: NewTryoutOptions | null;
   /** Practice imports: Monday used when the file has no week column. */

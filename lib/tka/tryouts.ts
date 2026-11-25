@@ -27,6 +27,23 @@ export async function academicYearFor(tx: RlsTx, date: string): Promise<string> 
   return year.id;
 }
 
+/** A school's sitting date must fall in the TO's academic year. */
+export async function assertDateInTryoutYear(tx: RlsTx, tryoutId: string, date: string): Promise<void> {
+  const ok = await tx.execute<{ ok: boolean }>(sql`
+    select exists (select 1 from public.tryouts t join public.academic_years y on y.id = t.academic_year_id
+                    where t.id = ${tryoutId} and ${date}::date between y.start_date and y.end_date) as ok`);
+  if (!ok[0]?.ok) throw new ImportError(`Tanggal ${formatDate(date)} berada di luar tahun ajaran try out ini.`);
+}
+
+/**
+ * Records the day a school sat a shared TO. Goes through a SECURITY DEFINER
+ * function: a school admin cannot write participant rows of a network TO.
+ */
+export async function setSchoolSittingDate(tx: RlsTx, tryoutId: string, schoolId: string, date: string): Promise<void> {
+  const res = await tx.execute<{ ok: boolean }>(sql`select app.set_tryout_school_date(${tryoutId}, ${schoolId}, ${date}::date) as ok`);
+  if (!res[0]?.ok) throw new ImportError(`Tanggal pelaksanaan ${formatDate(date)} tidak bisa disimpan (di luar tahun ajaran try out, atau sekolah bukan peserta).`);
+}
+
 /**
  * Refuses a new TO whose name already exists for the subject and academic year,
  * including TOs of other schools the caller cannot see (SECURITY DEFINER lookup).
@@ -141,10 +158,13 @@ export async function mergeTryouts(tx: RlsTx, ids: readonly string[]): Promise<M
     with m as (update public.tryout_scores set tryout_id = ${keepId} where tryout_id = any(${otherIds}) returning 1)
     select count(*)::int as n from m`);
   // 5. The kept TO becomes the network TO (a school-owned TO may only list its owner), dated at the earliest sitting.
+  //    Each school keeps the day it sat its own copy.
   await tx.update(tryouts).set({ ownerSchoolId: null, date: keep.date }).where(eq(tryouts.id, keepId));
   await tx.execute(sql`
-    insert into public.tryout_schools (tryout_id, school_id)
-    select distinct ${keepId}::uuid, school_id from public.tryout_schools where tryout_id = any(${otherIds})
+    insert into public.tryout_schools (tryout_id, school_id, date)
+    select distinct on (school_id) ${keepId}::uuid, school_id, date from public.tryout_schools
+     where tryout_id = any(${otherIds})
+     order by school_id, date
     on conflict do nothing`);
   await tx.execute(sql`delete from public.tryouts where id = any(${otherIds})`);
   await rescoreTryout(tx, keepId);
@@ -157,9 +177,20 @@ export async function mergeTryouts(tx: RlsTx, ids: readonly string[]): Promise<M
  * results for it cannot be removed. A TO sat by more than one school, or by a
  * school other than its owner, becomes a network TO.
  */
-export async function setTryoutSchools(tx: RlsTx, tryoutId: string, schoolIds: readonly string[]): Promise<void> {
-  const [t] = await tx.select({ id: tryouts.id, level: tryouts.level, owner: tryouts.ownerSchoolId }).from(tryouts).where(eq(tryouts.id, tryoutId)).limit(1);
+export async function setTryoutSchools(
+  tx: RlsTx,
+  tryoutId: string,
+  schoolIds: readonly string[],
+  /** school id -> sitting date; schools left out keep theirs (new ones get the TO date). */
+  dates: Readonly<Record<string, string>> = {},
+): Promise<void> {
+  const [t] = await tx
+    .select({ id: tryouts.id, level: tryouts.level, owner: tryouts.ownerSchoolId, date: tryouts.date })
+    .from(tryouts)
+    .where(eq(tryouts.id, tryoutId))
+    .limit(1);
   if (!t) throw new ImportError("Try out tidak ditemukan.");
+  for (const d of new Set(Object.values(dates))) await assertDateInTryoutYear(tx, tryoutId, d);
   const valid = await tx.execute<{ id: string }>(sql`select id from public.schools where level = ${t.level} and id = any(${uuidArray(schoolIds)})`);
   const wanted = new Set(valid.map((v) => v.id));
   if (!wanted.size) throw new ImportError("Pilih minimal satu sekolah peserta.");
@@ -176,6 +207,10 @@ export async function setTryoutSchools(tx: RlsTx, tryoutId: string, schoolIds: r
   await tx.execute(sql`delete from public.tryout_schools where tryout_id = ${tryoutId} and not (school_id = any(${uuidArray([...wanted])}))`);
   await tx
     .insert(tryoutSchools)
-    .values([...wanted].map((schoolId) => ({ tryoutId, schoolId })))
+    .values([...wanted].map((schoolId) => ({ tryoutId, schoolId, date: dates[schoolId] ?? t.date })))
     .onConflictDoNothing();
+  for (const schoolId of wanted) {
+    const d = dates[schoolId];
+    if (d) await tx.update(tryoutSchools).set({ date: d }).where(and(eq(tryoutSchools.tryoutId, tryoutId), eq(tryoutSchools.schoolId, schoolId)));
+  }
 }

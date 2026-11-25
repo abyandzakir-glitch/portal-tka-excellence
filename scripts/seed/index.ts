@@ -288,7 +288,7 @@ async function main() {
                 ownerSchoolId: null,
               })
               .returning();
-            await tx.insert(t.tryoutSchools).values(levelSchools.map((s) => ({ tryoutId: tryout!.id, schoolId: s.id })));
+            await tx.insert(t.tryoutSchools).values(levelSchools.map((s) => ({ tryoutId: tryout!.id, schoolId: s.id, date })));
 
             const items = await tx
               .insert(t.tryoutItems)

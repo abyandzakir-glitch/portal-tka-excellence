@@ -18,6 +18,11 @@ import { effectiveScore } from "@/lib/metrics/tryout-score";
 import { average, delta, participationRate, presentScores, round2, shareMeetingTarget } from "@/lib/metrics/tryout-kpi";
 import type { CountRow, ScoreInfo, TryoutInfo } from "./queries";
 
+/** The day a school sat the TO (schools share one TO but may sit it on different days). */
+export function dateFor(t: Pick<TryoutInfo, "date" | "schoolDates">, schoolId: string): string {
+  return t.schoolDates[schoolId] ?? t.date;
+}
+
 /** groupId -> keyId -> counts */
 export type CountsMap = Map<string, Map<string, MasteryCounts>>;
 
@@ -58,8 +63,13 @@ export const scoreValue = (s: ScoreInfo) => (s.present ? effectiveScore({ rawSco
  */
 export function latestTwoForSchool(tryouts: readonly TryoutInfo[], scores: readonly ScoreInfo[], schoolId: string) {
   const withScores = new Set(scores.filter((s) => s.schoolId === schoolId).map((s) => s.tryoutId));
-  const list = tryouts.filter((t) => t.schoolIds.includes(schoolId) && withScores.has(t.id)).sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
+  const list = bySchoolDate(tryouts.filter((t) => t.schoolIds.includes(schoolId) && withScores.has(t.id)), schoolId);
   return { latest: list.at(-1) ?? null, previous: list.at(-2) ?? null };
+}
+
+/** Try-outs in the order a school sat them. */
+export function bySchoolDate<T extends Pick<TryoutInfo, "date" | "schoolDates" | "name">>(tryouts: readonly T[], schoolId: string): T[] {
+  return [...tryouts].sort((a, b) => dateFor(a, schoolId).localeCompare(dateFor(b, schoolId)) || a.name.localeCompare(b.name));
 }
 
 export interface ScoreKpi {
@@ -116,12 +126,15 @@ export function scoreKpi(input: {
   };
 }
 
-/** Average score per TO for a set of students (trend lines). */
-export function averageByTryout(tryouts: readonly TryoutInfo[], scores: readonly ScoreInfo[], studentIds: ReadonlySet<string>) {
-  return tryouts.map((t) => {
+/**
+ * Average score per TO for a set of students (trend lines). With a school, each
+ * point sits on the day that school sat the TO.
+ */
+export function averageByTryout(tryouts: readonly TryoutInfo[], scores: readonly ScoreInfo[], studentIds: ReadonlySet<string>, schoolId?: string) {
+  return (schoolId ? bySchoolDate(tryouts, schoolId) : tryouts).map((t) => {
     const rows = scores.filter((s) => s.tryoutId === t.id && studentIds.has(s.studentId)).map((s) => ({ score: scoreValue(s), present: s.present }));
     const vals = presentScores(rows);
-    return { tryoutId: t.id, date: t.date, name: t.name, average: average(vals), n: vals.length };
+    return { tryoutId: t.id, date: schoolId ? dateFor(t, schoolId) : t.date, name: t.name, average: average(vals), n: vals.length };
   });
 }
 
@@ -156,11 +169,10 @@ export function studentStatus(input: {
   const risk = new Map<string, RiskResult>();
   for (const subjectId of input.subjectIds) {
     bySubject.set(subjectId, masteryOf(input.subjectCounts, input.studentId, subjectId, input.mastery));
-    const series = input.tryouts
-      .filter((t) => t.subjectId === subjectId)
+    const series = bySchoolDate(input.tryouts.filter((t) => t.subjectId === subjectId), input.schoolId)
       .map((t) => {
         const s = input.scoreIndex.get(`${t.id}|${input.studentId}`);
-        return s ? { date: t.date, score: scoreValue(s) } : null;
+        return s ? { date: dateFor(t, input.schoolId), score: scoreValue(s) } : null;
       })
       .filter((x): x is { date: string; score: number | null } => x != null);
     risk.set(subjectId, evaluateRisk(series, input.targetFor(subjectId, input.schoolId), input.risk));

@@ -60,13 +60,12 @@ export async function loadWeekStatus(tx: RlsTx, weekStart: string): Promise<Scho
 
   const tryoutRows = await tx.execute<{ school_id: string; id: string; name: string; subject: string; date: string; scored: number; totals_only: number } & Row>(sql`
     with due as (
-      select t.id, t.name, sub.name as subject, t.date::text as date, sc.id as school_id
+      -- Due on the day each school sits the TO (one shared TO, per-school dates).
+      select t.id, t.name, sub.name as subject, ts.date::text as date, ts.school_id
       from public.tryouts t
       join public.subjects sub on sub.id = t.subject_id
-      join public.schools sc on sc.level = t.level
-      where t.date between ${due.from}::date and ${due.to}::date
-        and (t.owner_school_id = sc.id
-             or exists (select 1 from public.tryout_schools ts where ts.tryout_id = t.id and ts.school_id = sc.id))
+      join public.tryout_schools ts on ts.tryout_id = t.id
+      where ts.date between ${due.from}::date and ${due.to}::date
     )
     select d.school_id, d.id, d.name, d.subject, d.date,
       count(s.id)::int as scored,
